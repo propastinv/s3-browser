@@ -52,7 +52,7 @@ jobs:
       if: env.SKIP != 'true'
       working-directory: ./
       run: |
-        docker build -t ghcr.io/${{ github.repository }}/client:${{ env.VERSION }} .
+        docker build -t ghcr.io/${{ github.repository }}/client:${{ env.VERSION }} ./client
 
     - name: Push Docker Image to GHCR
       if: env.SKIP != 'true'
