@@ -1,0 +1,61 @@
+name: Build and Push client
+
+permissions:
+  packages: write
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "client/package.json"
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Get version from package.json
+      id: get_version
+      run: |
+        VERSION=$(jq -r '.version' client/package.json)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Check if image exists
+      id: check_image
+      run: |
+        if docker manifest inspect ghcr.io/${{ github.repository }}/client:${{ env.VERSION }} > /dev/null 2>&1; then
+          echo "SKIP=true" >> $GITHUB_ENV
+        else
+          echo "SKIP=false" >> $GITHUB_ENV
+        fi
+
+    - name: Stop if image already exists
+      if: env.SKIP == 'true'
+      run: echo "No changes in version. Skipping build."
+
+    - name: Log in to GitHub Container Registry
+      if: env.SKIP != 'true'
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Docker Image
+      if: env.SKIP != 'true'
+      working-directory: ./
+      run: |
+        docker build -t ghcr.io/${{ github.repository }}/client:${{ env.VERSION }} .
+
+    - name: Push Docker Image to GHCR
+      if: env.SKIP != 'true'
+      working-directory: ./
+      run: |
+        docker push ghcr.io/${{ github.repository }}/client:${{ env.VERSION }}

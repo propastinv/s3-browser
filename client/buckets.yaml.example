@@ -1,0 +1,17 @@
+buckets:
+  - id: example-bucket
+    provider: s3
+    bucket: example
+    region: us-west-2
+    endpoint: https://s3.us-west-2.amazonaws.com
+    forcePathStyle: false
+    accessKeyId: YOUR_KEY
+    secretAccessKey: YOUR_SECRET
+  - id: example-bucket-2
+    provider: s3
+    bucket: example2
+    region: us-east-1
+    endpoint: https://s3.us-east-1.amazonaws.com
+    forcePathStyle: false
+    accessKeyId: YOUR_KEY_2
+    secretAccessKey: YOUR_SECRET_2
