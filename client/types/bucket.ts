@@ -5,6 +5,7 @@ export interface BucketConfig {
     region: string;
     endpoint: string;
     forcePathStyle?: boolean;
+    group: string;
     accessKeyId: string;
     secretAccessKey: string;
 }

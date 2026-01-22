@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "@/app/globals.css";
 import {
   SidebarInset,
   SidebarProvider,
@@ -8,6 +8,9 @@ import {
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import Providers from "@/app/Providers";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/next-auth-options";
+import { getBucketsForGroups } from '@/lib/buckets';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,17 +27,20 @@ export const metadata: Metadata = {
   description: "A simple S3 browser",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+  const hasBackend = Boolean(process.env.BACKEND_URL);
+  const buckets = getBucketsForGroups(session?.user?.groups ?? []);
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>
+        <Providers session={session}>
           <SidebarProvider
             style={
               {
@@ -43,7 +49,7 @@ export default function RootLayout({
               } as React.CSSProperties
             }
           >
-            <AppSidebar variant="inset" />
+            <AppSidebar variant="inset" hasBackend={hasBackend} buckets={buckets} />
             <SidebarInset>
               <SiteHeader />
               {children}

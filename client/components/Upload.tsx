@@ -46,34 +46,77 @@ export function Upload({ refresh, className }: UploadProps) {
         if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files || [])]);
     };
 
-    const uploadFile = (file: File) => {
-        return new Promise<void>((resolve, reject) => {
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("prefix", prefix);
+    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
-            const xhr = new XMLHttpRequest();
+    async function uploadFileDirect(file: File) {
+        const key = prefix ? `${prefix}/${file.name}` : file.name;
 
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    setProgress(Math.round((e.loaded / e.total) * 100));
-                }
-            };
+        // 1. init multipart
+        const initRes = await fetch(`/api/upload/init`, {
+            method: "POST",
+            body: JSON.stringify({
+                bucketId,
+                key,
+            }),
+        }).then(r => r.json());
 
-            xhr.onload = () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve();
-                } else {
-                    reject(new Error(`Upload failed: ${xhr.status}`));
-                }
-            };
+        const uploadId = initRes.uploadId;
 
-            xhr.onerror = () => reject(new Error("Network error"));
+        let uploaded = 0;
+        let partNumber = 1;
+        const parts: { PartNumber: number; ETag: string }[] = [];
 
-            xhr.open("POST", `/api/bucket/${bucketId}`);
-            xhr.send(formData);
+        for (let start = 0; start < file.size; start += CHUNK_SIZE) {
+            const chunk = file.slice(start, start + CHUNK_SIZE);
+
+            // 2. presign part
+            const presignRes = await fetch(`/api/upload/presign-part`, {
+                method: "POST",
+                body: JSON.stringify({
+                    bucketId,
+                    key,
+                    uploadId,
+                    partNumber,
+                }),
+            }).then(r => r.json());
+
+            const url = presignRes.url;
+
+            // 3. upload part directly to S3
+            const res = await fetch(url, {
+                method: "PUT",
+                body: chunk,
+            });
+
+            if (!res.ok) {
+                throw new Error(`Part ${partNumber} upload failed`);
+            }
+
+            const etag = res.headers.get("ETag")?.replace(/"/g, "");
+            if (!etag) throw new Error("No ETag from S3");
+
+            parts.push({ PartNumber: partNumber, ETag: etag });
+
+            uploaded += chunk.size;
+            setProgress(Math.round((uploaded / file.size) * 100));
+
+            partNumber++;
+        }
+
+        // 4. complete
+        await fetch(`/api/upload/complete`, {
+            method: "POST",
+            body: JSON.stringify({
+                bucketId,
+                key,
+                uploadId,
+                parts,
+            }),
         });
-    };
+
+        setProgress(100);
+    }
+
 
 
 
@@ -83,7 +126,7 @@ export function Upload({ refresh, className }: UploadProps) {
         setProgress(0);
 
         for (const file of files) {
-            await uploadFile(file);
+            await uploadFileDirect(file);
         }
 
         setUploading(false);

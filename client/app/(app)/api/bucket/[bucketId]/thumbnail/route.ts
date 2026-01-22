@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBucketById } from "@/lib/buckets";
+import { getToken } from 'next-auth/jwt';
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { Readable } from "stream";
 
 export async function GET(req: NextRequest, context: { params: Promise<{ bucketId: string }> }) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
     const { bucketId } = await context.params;
-    const bucket = getBucketById(bucketId);
+    const userGroups = token.user.groups;
+    const bucket = getBucketById(bucketId, userGroups);
 
     if (!bucket) {
         return NextResponse.json({ error: "Bucket not found" }, { status: 404 });

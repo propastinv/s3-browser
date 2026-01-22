@@ -3,11 +3,8 @@
 import * as React from "react"
 import {
   IconLogs,
-  IconDatabase,
-  IconFileWord,
   IconFolder,
   IconInnerShadowTop,
-  IconReport,
   IconSearch,
   IconSettings,
   IconUsers,
@@ -24,45 +21,51 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useSession } from "next-auth/react";
+import { BucketConfig } from '@/types/bucket';
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Buckets",
-      url: "/buckets",
-      icon: IconFolder,
-    },
-    {
-      title: "Recent",
-      url: "/recent",
-      icon: IconLogs,
-    },
-    {
-      title: "Users",
-      url: "/users",
-      icon: IconUsers,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: IconSettings,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  hasBackend: boolean;
+  buckets: BucketConfig[];
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ hasBackend, buckets, ...props }: AppSidebarProps) {
+  const { data: session } = useSession();
+
+  const user = {
+    name: session?.user?.name || "Jogn Doe",
+    email: session?.user?.email || "j.doe@example.com",
+    avatar: session?.user?.avatar_url || "/avatars/anon.jpg",
+  };
+
+  const data = {
+    navMain: [
+      {
+        title: "Buckets",
+        url: "/buckets",
+        icon: IconFolder,
+        items: buckets.map(bucket => ({
+          title: bucket.id,
+          url: `/bucket/${encodeURIComponent(bucket.id)}`,
+        })),
+      },
+      ...(hasBackend
+        ? [
+          { title: "Recent", url: "/recent", icon: IconLogs },
+          { title: "Users", url: "/users", icon: IconUsers },
+        ]
+        : []),
+    ],
+    navSecondary: hasBackend
+      ? [
+        { title: "Settings", url: "/settings", icon: IconSettings },
+        { title: "Search", url: "#", icon: IconSearch },
+      ]
+      : [],
+  };
+
+
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -85,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

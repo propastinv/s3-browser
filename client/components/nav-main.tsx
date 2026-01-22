@@ -54,19 +54,38 @@ export function NavMain({
                     defaultOpen={isActive || isSubActive}
                     className="group/collapsible"
                   >
-                    <CollapsibleTrigger asChild>
+                    <div className="flex items-center">
                       <SidebarMenuButton
                         tooltip={item.title}
-                        className={`flex items-center gap-2 ${isActive
-                          ? "bg-sidebar-accent"
-                          : ""
-                          }`}
+                        className={`flex-1 ${isActive ? "bg-sidebar-accent" : ""}`}
+                        asChild={!!item.url}
                       >
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                        <IconChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        {item.url ? (
+                          <Link href={item.url} className="flex items-center gap-2">
+                            {item.icon && <item.icon width={16} height={16} />}
+                            <span>{item.title}</span>
+                          </Link>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            {item.icon && <item.icon width={16} height={16} />}
+                            <span>{item.title}</span>
+                          </div>
+                        )}
                       </SidebarMenuButton>
-                    </CollapsibleTrigger>
+
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          className="ml-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-sidebar-accent transition"
+                        >
+                          <IconChevronRight
+                            className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                            size={16}
+                          />
+                        </button>
+                      </CollapsibleTrigger>
+                    </div>
+
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         {item.items?.map((subItem) => {
@@ -122,6 +141,6 @@ export function NavMain({
           })}
         </SidebarMenu>
       </SidebarGroupContent>
-    </SidebarGroup>
+    </SidebarGroup >
   )
 }
