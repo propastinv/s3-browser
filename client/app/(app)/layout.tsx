@@ -35,6 +35,7 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
   const hasBackend = Boolean(process.env.BACKEND_URL);
   const buckets = getBucketsForGroups(session?.user?.groups ?? []);
+  const companyName = process.env.COMPANY_NAME as string;
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -49,7 +50,7 @@ export default async function RootLayout({
               } as React.CSSProperties
             }
           >
-            <AppSidebar variant="inset" hasBackend={hasBackend} buckets={buckets} />
+            <AppSidebar variant="inset" hasBackend={hasBackend} buckets={buckets} companyName={companyName} />
             <SidebarInset>
               <SiteHeader />
               {children}

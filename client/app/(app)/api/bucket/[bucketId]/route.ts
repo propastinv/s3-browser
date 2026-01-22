@@ -7,14 +7,6 @@ import {
     DeleteObjectCommand
 } from '@aws-sdk/client-s3';
 
-async function streamToString(stream: any): Promise<string> {
-    const chunks: any[] = [];
-    for await (const chunk of stream) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    return Buffer.concat(chunks).toString('utf-8');
-}
-
 export async function GET(
     req: NextRequest,
     context: { params: Promise<{ bucketId: string }> }

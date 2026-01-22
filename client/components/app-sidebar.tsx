@@ -27,9 +27,10 @@ import { BucketConfig } from '@/types/bucket';
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   hasBackend: boolean;
   buckets: BucketConfig[];
+  companyName: string;
 }
 
-export function AppSidebar({ hasBackend, buckets, ...props }: AppSidebarProps) {
+export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSidebarProps) {
   const { data: session } = useSession();
 
   const user = {
@@ -77,7 +78,7 @@ export function AppSidebar({ hasBackend, buckets, ...props }: AppSidebarProps) {
             >
               <a href="#">
                 <IconInnerShadowTop className="size-5!" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">{companyName}</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
