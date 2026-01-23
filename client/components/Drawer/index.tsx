@@ -4,6 +4,12 @@ import { DrawerProps } from "./Drawer.types"
 import { formatSize, formatDate } from "@/lib/formatters"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 import {
     Drawer,
@@ -12,7 +18,9 @@ import {
     DrawerTitle,
     DrawerFooter,
     DrawerClose,
+    DrawerDescription
 } from "@/components/ui/drawer"
+import { ClipboardCopy } from 'lucide-react';
 import { Button } from "@/components/ui/button"
 
 export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
@@ -31,6 +39,7 @@ export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
 
     const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const [copied, setCopied] = useState(false)
 
     useEffect(() => {
         if (!file || !isImage) {
@@ -85,6 +94,32 @@ export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
         }
     }
 
+    const handleDownload = () => {
+        if (!file) return
+
+        const url = `/api/bucket/${bucketId}/download?key=${encodeURIComponent(
+            file.key
+        )}`
+
+        window.open(url, "_blank")
+    }
+
+    const handleCopyPath = async () => {
+        if (!file) return
+
+        try {
+            await navigator.clipboard.writeText(file.key)
+            setCopied(true)
+
+            setTimeout(() => setCopied(false), 1500)
+        } catch (err) {
+            console.error("Failed to copy", err)
+        }
+    }
+
+
+
+
     return (
         <Drawer
             open={isOpen}
@@ -96,8 +131,37 @@ export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
             <DrawerContent className="h-full w-[24rem] ml-auto">
                 <DrawerHeader>
                     <DrawerTitle className="truncate">
-                        {file?.key}
+                        File
                     </DrawerTitle>
+                    <DrawerDescription>
+                        <span className="flex items-center justify-between gap-2">
+                            <span className="truncate pr-2">
+                                {file?.key}
+                            </span>
+
+                            <TooltipProvider>
+                                <Tooltip open={copied ? true : undefined}>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleCopyPath}
+                                            title="Copy path"
+                                            className="h-7 w-7 p-0 shrink-0"
+                                        >
+                                            <ClipboardCopy className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+
+                                    <TooltipContent side="left">
+                                        {copied ? "Copied!" : "Copy path"}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </span>
+                    </DrawerDescription>
+
+
                 </DrawerHeader>
 
                 <div className="flex flex-col gap-4 px-4 overflow-y-auto">
@@ -146,12 +210,15 @@ export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
                 </div>
 
                 <DrawerFooter className="mt-auto">
+                    <Button onClick={handleDownload}>
+                        Download
+                    </Button>
                     <Button variant="destructive" onClick={handleDelete}>
                         Delete
                     </Button>
-                    <DrawerClose asChild>
+                    {/* <DrawerClose asChild>
                         <Button variant="outline">Close</Button>
-                    </DrawerClose>
+                    </DrawerClose> */}
                 </DrawerFooter>
             </DrawerContent>
         </Drawer>
