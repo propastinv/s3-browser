@@ -46,9 +46,17 @@ export const authOptions: AuthOptions = {
 
       try {
         const response = await refreshTokenRequest(token.refresh_token);
-        const tokens = response.data;
+        const tokens = response?.data;
 
-        if (response.status !== 200) throw new Error("Failed to refresh token");
+        if (!response) {
+          return {
+            ...token,
+            error: "RefreshTokenExpired",
+          };
+        }
+
+
+        if (response?.status !== 200) throw new Error("Failed to refresh token");
 
         return {
           ...token,

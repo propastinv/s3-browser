@@ -14,24 +14,43 @@ export const oidc = axios.create({
   withCredentials: true,
 });
 
-export const refreshTokenRequest = (refresh_token: string) => {
-  return oidc({
-    method: "POST",
-    url: "/token",
-    data: new URLSearchParams({
-      refresh_token,
-      ...params,
-    }),
-  });
+export const refreshTokenRequest = async (refresh_token: string) => {
+  try {
+    return await oidc({
+      method: "POST",
+      url: "/token",
+      data: new URLSearchParams({
+        refresh_token,
+        ...params,
+      }),
+    });
+  } catch (err: any) {
+    if (err.response?.status === 400 || err.response?.status === 401) {
+      console.warn("OIDC refresh token expired or invalid");
+      return null;
+    }
+    throw err;
+  }
 };
 
-export const logoutRequest = (refresh_token: string) => {
-  return oidc({
-    method: "POST",
-    url: "/logout",
-    data: new URLSearchParams({
-      refresh_token,
-      ...params,
-    }),
-  });
+
+export const logoutRequest = async (refresh_token: string) => {
+  try {
+    return await oidc({
+      method: "POST",
+      url: "/logout",
+      data: new URLSearchParams({
+        refresh_token,
+        ...params,
+      }),
+    });
+  } catch (err: any) {
+    if (err.response?.status === 400 || err.response?.status === 401) {
+      console.info("OIDC logout skipped: token already invalid");
+      return;
+    }
+
+    throw err;
+  }
 };
+
