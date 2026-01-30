@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client"
+  output        = "../generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model S3FileIndex {
+  id           Int      @id @default(autoincrement())
+  bucket       String
+  key          String
+  group        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([bucket, key])
+  @@index([key])
+  @@index([bucket])
+}
+
+model S3FileActionLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  bucket    String
+  key       String
+  group     String
+  userName  String?
+  createdAt DateTime @default(now())
+
+  @@index([bucket])
+  @@index([key])
+  @@index([group])
+  @@index([createdAt])
+}

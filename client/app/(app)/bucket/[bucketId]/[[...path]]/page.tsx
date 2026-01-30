@@ -4,7 +4,7 @@ import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Loader } from "@/components/ui/Loader";
-import { Folder, File, RefreshCcw } from "lucide-react"
+import { Folder, File } from "lucide-react"
 import { FileDrawer } from "@/components/Drawer";
 import { formatSize } from "@/lib/formatters";
 import { BucketObject } from '@/types/bucket';

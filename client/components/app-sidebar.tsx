@@ -50,9 +50,9 @@ export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSi
           url: `/bucket/${encodeURIComponent(bucket.id)}`,
         })),
       },
+      { title: "Recent", url: "/recent", icon: IconLogs },
       ...(hasBackend
         ? [
-          { title: "Recent", url: "/recent", icon: IconLogs },
           { title: "Users", url: "/users", icon: IconUsers },
         ]
         : []),

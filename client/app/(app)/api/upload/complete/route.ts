@@ -2,6 +2,7 @@ import { CompleteMultipartUploadCommand, S3Client } from '@aws-sdk/client-s3';
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { getBucketById } from '@/lib/buckets';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
     const { bucketId, key, uploadId, parts } = await req.json();
@@ -40,6 +41,16 @@ export async function POST(req: NextRequest) {
             MultipartUpload: { Parts: parts },
         })
     );
+
+    await prisma.s3FileActionLog.create({
+        data: {
+            action: 'UPLOAD',
+            bucket: bucket.id,
+            key: key,
+            group: bucket.group,
+            userName: token.name || token.email || 'Unknown',
+        }
+    }).catch(e => console.error('Failed to log upload action:', e));
 
     return NextResponse.json({ success: true });
 }
