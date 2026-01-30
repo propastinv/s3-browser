@@ -4,11 +4,11 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
 COPY package*.json ./
-# COPY prisma ./prisma
+COPY prisma ./prisma
 
 ENV PRISMA_FORCE_NAPI=true
 RUN npm ci
-# RUN npx prisma generate
+RUN npx prisma generate
 
 COPY . .
 RUN npm run build
