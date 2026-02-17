@@ -69,31 +69,19 @@ export function Upload({ refresh, className }: UploadProps) {
         for (let start = 0; start < file.size; start += CHUNK_SIZE) {
             const chunk = file.slice(start, start + CHUNK_SIZE);
 
-            // 2. presign part
-            const presignRes = await fetch(`/api/upload/presign-part`, {
+            // 2. upload part TO SERVER (proxy)
+            const res = await fetch(`/api/upload/upload-part?bucketId=${bucketId}&key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, {
                 method: "POST",
-                body: JSON.stringify({
-                    bucketId,
-                    key,
-                    uploadId,
-                    partNumber,
-                }),
-            }).then(r => r.json());
-
-            const url = presignRes.url;
-
-            // 3. upload part directly to S3
-            const res = await fetch(url, {
-                method: "PUT",
                 body: chunk,
             });
 
             if (!res.ok) {
-                throw new Error(`Part ${partNumber} upload failed`);
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(`Part ${partNumber} upload failed: ${errorData.error || res.statusText}`);
             }
 
-            const etag = res.headers.get("ETag")?.replace(/"/g, "");
-            if (!etag) throw new Error("No ETag from S3");
+            const { etag } = await res.json();
+            if (!etag) throw new Error("No ETag from server");
 
             parts.push({ PartNumber: partNumber, ETag: etag });
 
@@ -103,7 +91,7 @@ export function Upload({ refresh, className }: UploadProps) {
             partNumber++;
         }
 
-        // 4. complete
+        // 3. complete
         await fetch(`/api/upload/complete`, {
             method: "POST",
             body: JSON.stringify({
