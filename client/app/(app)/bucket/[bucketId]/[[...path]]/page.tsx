@@ -27,6 +27,7 @@ export default function BucketPage() {
     const [loading, setLoading] = useState(true)
     const [isOpen, setIsOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
+    const [uploadMethod, setUploadMethod] = useState<"proxy" | "direct">("proxy")
     const [selectedFile, setSelectedFile] = useState<BucketObject | undefined>(undefined)
 
     async function refreshFiles() {
@@ -34,6 +35,7 @@ export default function BucketPage() {
         const res = await fetch(`/api/bucket/${bucketId}?prefix=${encodeURIComponent(prefix)}`)
         const data = await res.json()
         setItems(data.items || [])
+        setUploadMethod(data.uploadMethod || "proxy")
         setLoading(false)
     }
 
@@ -70,7 +72,7 @@ export default function BucketPage() {
                     <div className="flex justify-start sm:justify-normal">
                         <ButtonGroup className="flex w-full sm:w-auto">
                             <New className="flex-1 sm:flex-none" />
-                            <Upload className="flex-1 sm:flex-none" refresh={refreshFiles} />
+                            <Upload className="flex-1 sm:flex-none" refresh={refreshFiles} method={uploadMethod} />
                             <Refresh className="flex-1 sm:flex-none" refresh={refreshFiles} />
                         </ButtonGroup>
 

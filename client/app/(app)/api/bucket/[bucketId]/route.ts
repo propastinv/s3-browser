@@ -65,7 +65,10 @@ export async function GET(
 
         syncFolderIndex(bucket.id, bucket.group, prefix, files)
             .catch(err => console.error('Background sync failed:', err));
-        return NextResponse.json({ items: [...folders, ...files] });
+        return NextResponse.json({
+            items: [...folders, ...files],
+            uploadMethod: bucket.uploadMethod || "proxy"
+        });
     } catch (err) {
         console.error(err);
         return NextResponse.json({ error: 'Failed to list objects' }, { status: 500 });

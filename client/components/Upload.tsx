@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils"
 export interface UploadProps {
     refresh: () => Promise<void>;
     className?: string;
+    method?: "proxy" | "direct";
 }
 
-export function Upload({ refresh, className }: UploadProps) {
+export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
@@ -84,18 +85,46 @@ export function Upload({ refresh, className }: UploadProps) {
                 const chunkInfo = chunks[index];
                 const chunk = file.slice(chunkInfo.start, chunkInfo.start + chunkInfo.size);
 
-                const res = await fetch(`/api/upload/upload-part?bucketId=${bucketId}&key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${chunkInfo.partNumber}`, {
-                    method: "POST",
-                    body: chunk,
-                });
+                let etag = "";
 
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({}));
-                    throw new Error(`Part ${chunkInfo.partNumber} upload failed: ${errorData.error || res.statusText}`);
+                if (method === "direct") {
+                    // Direct CORS upload
+                    const presignRes = await fetch(`/api/upload/presign-part`, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            bucketId,
+                            key,
+                            uploadId,
+                            partNumber: chunkInfo.partNumber,
+                        }),
+                    }).then(r => r.json());
+
+                    const res = await fetch(presignRes.url, {
+                        method: "PUT",
+                        body: chunk,
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`Part ${chunkInfo.partNumber} upload fail to S3`);
+                    }
+                    etag = res.headers.get("ETag")?.replace(/"/g, "") || "";
+                } else {
+                    // Proxy upload
+                    const res = await fetch(`/api/upload/upload-part?bucketId=${bucketId}&key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${chunkInfo.partNumber}`, {
+                        method: "POST",
+                        body: chunk,
+                    });
+
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        throw new Error(`Part ${chunkInfo.partNumber} upload fail to Proxy: ${errorData.error || res.statusText}`);
+                    }
+
+                    const data = await res.json();
+                    etag = data.etag;
                 }
 
-                const { etag } = await res.json();
-                if (!etag) throw new Error("No ETag from server");
+                if (!etag) throw new Error(`No ETag for part ${chunkInfo.partNumber}`);
 
                 parts.push({ PartNumber: chunkInfo.partNumber, ETag: etag });
                 uploaded += chunkInfo.size;

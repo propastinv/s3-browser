@@ -8,6 +8,7 @@ export interface BucketConfig {
     group: string;
     accessKeyId: string;
     secretAccessKey: string;
+    uploadMethod?: "proxy" | "direct";
 }
 
 export interface BucketObject {
