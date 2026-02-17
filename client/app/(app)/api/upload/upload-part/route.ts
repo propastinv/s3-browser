@@ -42,18 +42,18 @@ export async function POST(req: NextRequest) {
     });
 
     try {
-        const contentLength = req.headers.get('content-length');
-        if (!contentLength) {
-            return NextResponse.json({ error: 'Missing content-length header' }, { status: 400 });
-        }
+        // We use arrayBuffer() here because AWS SDK v3 has issues calculating 
+        // hashes for Web Streams (flowing readable stream error).
+        // Since we are uploading in 5MB chunks, this only uses ~5MB of RAM per concurrent request.
+        const body = await req.arrayBuffer();
 
         const command = new UploadPartCommand({
             Bucket: bucket.bucket,
             Key: key,
             UploadId: uploadId,
             PartNumber: partNumber,
-            Body: req.body as any,
-            ContentLength: parseInt(contentLength, 10),
+            Body: Buffer.from(body),
+            ContentLength: body.byteLength,
         });
 
         const res = await client.send(command);
