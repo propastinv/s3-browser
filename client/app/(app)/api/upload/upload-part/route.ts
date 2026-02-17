@@ -42,15 +42,18 @@ export async function POST(req: NextRequest) {
     });
 
     try {
-        // Read body as arrayBuffer to send to S3
-        const body = await req.arrayBuffer();
+        const contentLength = req.headers.get('content-length');
+        if (!contentLength) {
+            return NextResponse.json({ error: 'Missing content-length header' }, { status: 400 });
+        }
 
         const command = new UploadPartCommand({
             Bucket: bucket.bucket,
             Key: key,
             UploadId: uploadId,
             PartNumber: partNumber,
-            Body: Buffer.from(body),
+            Body: req.body as any,
+            ContentLength: parseInt(contentLength, 10),
         });
 
         const res = await client.send(command);

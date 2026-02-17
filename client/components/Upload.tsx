@@ -62,36 +62,54 @@ export function Upload({ refresh, className }: UploadProps) {
 
         const uploadId = initRes.uploadId;
 
-        let uploaded = 0;
-        let partNumber = 1;
-        const parts: { PartNumber: number; ETag: string }[] = [];
-
+        // 2. Prepare chunks
+        const chunks: { start: number; partNumber: number; size: number }[] = [];
+        let pNum = 1;
         for (let start = 0; start < file.size; start += CHUNK_SIZE) {
-            const chunk = file.slice(start, start + CHUNK_SIZE);
-
-            // 2. upload part TO SERVER (proxy)
-            const res = await fetch(`/api/upload/upload-part?bucketId=${bucketId}&key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, {
-                method: "POST",
-                body: chunk,
+            chunks.push({
+                start,
+                partNumber: pNum++,
+                size: Math.min(CHUNK_SIZE, file.size - start)
             });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error(`Part ${partNumber} upload failed: ${errorData.error || res.statusText}`);
-            }
-
-            const { etag } = await res.json();
-            if (!etag) throw new Error("No ETag from server");
-
-            parts.push({ PartNumber: partNumber, ETag: etag });
-
-            uploaded += chunk.size;
-            setProgress(Math.round((uploaded / file.size) * 100));
-
-            partNumber++;
         }
 
-        // 3. complete
+        let uploaded = 0;
+        const parts: { PartNumber: number; ETag: string }[] = [];
+        const CONCURRENCY = 6;
+        let chunkIndex = 0;
+
+        const uploadChunk = async () => {
+            while (chunkIndex < chunks.length) {
+                const index = chunkIndex++;
+                const chunkInfo = chunks[index];
+                const chunk = file.slice(chunkInfo.start, chunkInfo.start + chunkInfo.size);
+
+                const res = await fetch(`/api/upload/upload-part?bucketId=${bucketId}&key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${chunkInfo.partNumber}`, {
+                    method: "POST",
+                    body: chunk,
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(`Part ${chunkInfo.partNumber} upload failed: ${errorData.error || res.statusText}`);
+                }
+
+                const { etag } = await res.json();
+                if (!etag) throw new Error("No ETag from server");
+
+                parts.push({ PartNumber: chunkInfo.partNumber, ETag: etag });
+                uploaded += chunkInfo.size;
+                setProgress(Math.round((uploaded / file.size) * 100));
+            }
+        };
+
+        // 3. Upload chunks in parallel
+        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, chunks.length) }).map(uploadChunk));
+
+        // 4. Sort parts by number (S3 requirement)
+        parts.sort((a, b) => a.PartNumber - b.PartNumber);
+
+        // 5. complete
         await fetch(`/api/upload/complete`, {
             method: "POST",
             body: JSON.stringify({
