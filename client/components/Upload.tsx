@@ -46,7 +46,7 @@ export function Upload({ refresh, className }: UploadProps) {
         if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files || [])]);
     };
 
-    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+    const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
     async function uploadFileDirect(file: File) {
         const key = prefix ? `${prefix}/${file.name}` : file.name;
@@ -75,7 +75,7 @@ export function Upload({ refresh, className }: UploadProps) {
 
         let uploaded = 0;
         const parts: { PartNumber: number; ETag: string }[] = [];
-        const CONCURRENCY = 6;
+        const CONCURRENCY = 10;
         let chunkIndex = 0;
 
         const uploadChunk = async () => {
