@@ -74,9 +74,9 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
             });
         }
 
-        let uploaded = 0;
+        const chunkProgress: Record<number, number> = {};
         const parts: { PartNumber: number; ETag: string }[] = [];
-        const CONCURRENCY = 10;
+        const CONCURRENCY = 3;
         let chunkIndex = 0;
 
         const uploadChunk = async () => {
@@ -99,36 +99,68 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
                         }),
                     }).then(r => r.json());
 
-                    const res = await fetch(presignRes.url, {
-                        method: "PUT",
-                        body: chunk,
+                    etag = await new Promise<string>((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                chunkProgress[chunkInfo.partNumber] = e.loaded;
+                                const totalUploaded = Object.values(chunkProgress).reduce((a, b) => a + b, 0);
+                                setProgress(Math.min(100, Math.round((totalUploaded / file.size) * 100)));
+                            }
+                        };
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve(xhr.getResponseHeader("ETag")?.replace(/"/g, "") || "");
+                            } else {
+                                reject(new Error(`Part ${chunkInfo.partNumber} upload fail to S3: ${xhr.statusText}`));
+                            }
+                        };
+                        xhr.onerror = () => reject(new Error(`Part ${chunkInfo.partNumber} upload fail to S3 network error`));
+                        xhr.open("PUT", presignRes.url);
+                        xhr.send(chunk);
                     });
-
-                    if (!res.ok) {
-                        throw new Error(`Part ${chunkInfo.partNumber} upload fail to S3`);
-                    }
-                    etag = res.headers.get("ETag")?.replace(/"/g, "") || "";
                 } else {
                     // Proxy upload
-                    const res = await fetch(`/api/upload/upload-part?bucketId=${bucketId}&key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${chunkInfo.partNumber}`, {
-                        method: "POST",
-                        body: chunk,
+                    etag = await new Promise<string>((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                chunkProgress[chunkInfo.partNumber] = e.loaded;
+                                const totalUploaded = Object.values(chunkProgress).reduce((a, b) => a + b, 0);
+                                setProgress(Math.min(100, Math.round((totalUploaded / file.size) * 100)));
+                            }
+                        };
+                        xhr.onload = () => {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    const data = JSON.parse(xhr.responseText);
+                                    resolve(data.etag);
+                                } catch (e) {
+                                    reject(new Error("Invalid JSON response"));
+                                }
+                            } else {
+                                let errMsg = xhr.statusText;
+                                try {
+                                    const errorData = JSON.parse(xhr.responseText);
+                                    if (errorData.error) errMsg = errorData.error;
+                                } catch (e) {}
+                                reject(new Error(`Part ${chunkInfo.partNumber} upload fail to Proxy: ${errMsg}`));
+                            }
+                        };
+                        xhr.onerror = () => reject(new Error(`Part ${chunkInfo.partNumber} upload fail to Proxy network error`));
+                        xhr.open("POST", `/api/upload/upload-part?bucketId=${bucketId}&key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${chunkInfo.partNumber}`);
+                        xhr.send(chunk);
                     });
-
-                    if (!res.ok) {
-                        const errorData = await res.json().catch(() => ({}));
-                        throw new Error(`Part ${chunkInfo.partNumber} upload fail to Proxy: ${errorData.error || res.statusText}`);
-                    }
-
-                    const data = await res.json();
-                    etag = data.etag;
                 }
 
                 if (!etag) throw new Error(`No ETag for part ${chunkInfo.partNumber}`);
 
                 parts.push({ PartNumber: chunkInfo.partNumber, ETag: etag });
-                uploaded += chunkInfo.size;
-                setProgress(Math.round((uploaded / file.size) * 100));
+                
+                // Finalize chunk progress in case XHR progress omitted the 100% event
+                chunkProgress[chunkInfo.partNumber] = chunkInfo.size;
+                const totalUploaded = Object.values(chunkProgress).reduce((a, b) => a + b, 0);
+                setProgress(Math.min(100, Math.round((totalUploaded / file.size) * 100)));
             }
         };
 
