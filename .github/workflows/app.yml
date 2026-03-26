@@ -1,4 +1,4 @@
-name: Build and Push client
+name: Build and Push app
 
 permissions:
   packages: write

@@ -3,8 +3,17 @@
 import { useState, useCallback } from "react";
 import { X, UploadCloud } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export interface UploadProps {
     refresh: () => Promise<void>;
@@ -45,6 +54,10 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files || [])]);
+    };
+
+    const removeFile = (index: number) => {
+        setFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
     const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
@@ -143,7 +156,7 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
                                 try {
                                     const errorData = JSON.parse(xhr.responseText);
                                     if (errorData.error) errMsg = errorData.error;
-                                } catch (e) {}
+                                } catch (e) { }
                                 reject(new Error(`Part ${chunkInfo.partNumber} upload fail to Proxy: ${errMsg}`));
                             }
                         };
@@ -156,7 +169,7 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
                 if (!etag) throw new Error(`No ETag for part ${chunkInfo.partNumber}`);
 
                 parts.push({ PartNumber: chunkInfo.partNumber, ETag: etag });
-                
+
                 // Finalize chunk progress in case XHR progress omitted the 100% event
                 chunkProgress[chunkInfo.partNumber] = chunkInfo.size;
                 const totalUploaded = Object.values(chunkProgress).reduce((a, b) => a + b, 0);
@@ -184,9 +197,6 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
         setProgress(100);
     }
 
-
-
-
     const uploadFiles = async () => {
         if (!files.length) return;
         setUploading(true);
@@ -202,95 +212,108 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
         await refresh();
     };
 
+    const handleOpenChange = (open: boolean) => {
+        if (!uploading) {
+            setIsOpen(open);
+        }
+    };
+
     return (
         <>
             <Button
                 onClick={() => setIsOpen(true)}
-                className={cn(
-                    "bg-green-600 text-white hover:bg-green-700",
-                    className
-                )}
+                className={className}
             >
-                <UploadCloud size={16} /> Upload
+                <UploadCloud className="size-4" />
+                Upload
             </Button>
 
-            {isOpen && (
-                <div
-                    className="fixed inset-0 bg-white/30 backdrop-blur-sm flex items-center justify-center z-50"
-                    onClick={() => !uploading && setIsOpen(false)}
-                >
+            <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+                <DialogContent showCloseButton={!uploading}>
+                    <DialogHeader>
+                        <DialogTitle>Upload Files</DialogTitle>
+                    </DialogHeader>
+
                     <div
-                        className="bg-accent rounded shadow-lg w-full max-w-md p-6 relative"
-                        onClick={(e) => e.stopPropagation()}
+                        className={cn(
+                            "border-2 border-dashed rounded-lg h-40 flex flex-col items-center justify-center text-muted-foreground text-center cursor-pointer transition-colors",
+                            isDragging
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        )}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onClick={() => document.getElementById("fileInput")?.click()}
                     >
-                        <button
-                            onClick={() => !uploading && setIsOpen(false)}
-                            className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded"
-                        >
-                            <X size={20} />
-                        </button>
-
-                        <h2 className="text-lg font-semibold mb-4">Upload Files</h2>
-
-                        <div
-                            className={`border-2 border-dashed rounded h-40 flex flex-col items-center justify-center text-gray-500 text-center cursor-pointer transition
-                ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"}
-              `}
-                            onDrop={handleDrop}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onClick={() => document.getElementById("fileInput")?.click()}
-                        >
-                            {files.length === 0 ? (
-                                <span>Drag & Drop files here or click to select</span>
-                            ) : (
-                                <ul className="text-sm text-left max-h-32 overflow-auto w-full px-2">
+                        {files.length === 0 ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <UploadCloud className="size-10 text-muted-foreground/50" />
+                                <span className="text-sm">
+                                    Drag & Drop files here or click to select
+                                </span>
+                            </div>
+                        ) : (
+                            <ScrollArea className="h-32 w-full px-4">
+                                <ul className="space-y-1">
                                     {files.map((file, i) => (
-                                        <li key={i}>{file.name}</li>
+                                        <li
+                                            key={i}
+                                            className="flex items-center justify-between text-sm text-foreground bg-muted/50 rounded-md px-3 py-2"
+                                        >
+                                            <span className="truncate flex-1 mr-2">{file.name}</span>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-6 shrink-0"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeFile(i);
+                                                }}
+                                            >
+                                                <X className="size-3" />
+                                            </Button>
+                                        </li>
                                     ))}
                                 </ul>
-                            )}
-                        </div>
-
-                        {uploading && (
-                            <div className="w-full mt-4">
-                                <div className="bg-gray-200 rounded h-2">
-                                    <div
-                                        className="bg-green-600 h-2 rounded"
-                                        style={{ width: `${progress}%` }}
-                                    ></div>
-                                </div>
-                                <p className="text-sm mt-1">{progress}%</p>
-                            </div>
+                            </ScrollArea>
                         )}
-
-                        <input
-                            id="fileInput"
-                            type="file"
-                            multiple
-                            className="hidden"
-                            onChange={handleFileChange}
-                        />
-
-                        <div className="flex justify-end gap-2 mt-4">
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                disabled={uploading}
-                                className="px-4 py-2 bg-gray-300 text-black rounded hover:bg-gray-400 transition disabled:opacity-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={uploadFiles}
-                                disabled={uploading || !files.length}
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
-                            >
-                                Upload
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
+
+                    {uploading && (
+                        <div className="space-y-2">
+                            <Progress value={progress} />
+                            <p className="text-sm text-muted-foreground text-center">
+                                {progress}% uploaded
+                            </p>
+                        </div>
+                    )}
+
+                    <input
+                        id="fileInput"
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleFileChange}
+                    />
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsOpen(false)}
+                            disabled={uploading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={uploadFiles}
+                            disabled={uploading || !files.length}
+                        >
+                            {uploading ? "Uploading..." : "Upload"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

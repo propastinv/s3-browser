@@ -3,19 +3,17 @@
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Loader } from "@/components/ui/Loader";
-import { Folder, File } from "lucide-react"
-import { FileDrawer } from "@/components/Drawer";
-import { formatSize } from "@/lib/formatters";
-import { BucketObject } from '@/types/bucket';
-import { New } from "@/components/New";
-import { Upload } from "@/components/Upload";
-import { Refresh } from "@/components/Refresh";
-import {
-    ButtonGroup
-} from "@/components/ui/button-group"
-import { Input } from "@/components/ui/input"
-
+import { Folder, File, Search, FolderOpen, ChevronRight } from "lucide-react"
+import { ButtonGroup } from "@/components/ui/button-group"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
+import { Loader } from "@/components/loader"
+import { FileDrawer } from "@/components/Drawer"
+import { formatSize } from "@/lib/formatters"
+import { BucketObject } from "@/types/bucket"
+import { New } from "@/components/New"
+import { Upload } from "@/components/Upload"
+import { Refresh } from "@/components/Refresh"
 
 export default function BucketPage() {
     const params = useParams()
@@ -39,100 +37,135 @@ export default function BucketPage() {
         setLoading(false)
     }
 
-
     useEffect(() => {
         refreshFiles()
     }, [bucketId, prefix])
-
 
     function handleFileClick(file: BucketObject) {
         setSelectedFile(file)
         setIsOpen(true)
     }
 
-    const filteredItems = items.filter(item => {
+    const filteredItems = items.filter((item) => {
         const name = item.key.replace(prefix, "").replace(/\/$/, "")
         return name.toLowerCase().includes(searchQuery.toLowerCase())
     })
 
+    const folders = filteredItems.filter((item) => item.type === "folder")
+    const files = filteredItems.filter((item) => item.type !== "folder")
 
     return (
-        <div className="px-4 lg:gap-2 lg:px-6 py-6">
-            <div className="mb-2">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <Input
-                        type="text"
-                        name="search"
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="px-2 py-1 border rounded-md focus:outline-none focus:ring flex-1 min-w-0 w-full sm:w-auto"
-                    />
+        <div className="flex h-full flex-col">
+            {/* Header */}
+            <div className="border-b bg-background px-4 py-3">
+                <div className="flex items-center gap-3">
+                    <InputGroup className="flex-1">
+                        <InputGroupAddon align="inline-start">
+                            <Search className="text-muted-foreground" />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                            type="text"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </InputGroup>
 
-                    <div className="flex justify-start sm:justify-normal">
-                        <ButtonGroup className="flex w-full sm:w-auto">
-                            <New className="flex-1 sm:flex-none" />
-                            <Upload className="flex-1 sm:flex-none" refresh={refreshFiles} method={uploadMethod} />
-                            <Refresh className="flex-1 sm:flex-none" refresh={refreshFiles} />
-                        </ButtonGroup>
-
-                    </div>
+                    <ButtonGroup className="shrink-0">
+                        <New className="bg-blue-600 text-white hover:bg-blue-700" />
+                        <Upload refresh={refreshFiles} className="bg-green-600 text-white hover:bg-green-700" method={uploadMethod} />
+                        <Refresh refresh={refreshFiles} />
+                    </ButtonGroup>
                 </div>
-
             </div>
 
-            <div className="relative min-h-40 py-2">
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-4">
                 {loading ? (
                     <Loader />
+                ) : filteredItems.length === 0 ? (
+                    <Empty className="border">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <FolderOpen />
+                            </EmptyMedia>
+                            <EmptyTitle>
+                                {searchQuery ? "Nothing found" : "Directory empty"}
+                            </EmptyTitle>
+                            <EmptyDescription>
+                                {searchQuery
+                                    ? `No files found for query "${searchQuery}"`
+                                    : "Upload files or create a new folder"}
+                            </EmptyDescription>
+                        </EmptyHeader>
+                        {!searchQuery && (
+                            <EmptyContent>
+                                <ButtonGroup>
+                                    <New className="bg-blue-600 text-white hover:bg-blue-700" />
+                                    <Upload refresh={refreshFiles} className="bg-green-600 text-white hover:bg-green-700" method={uploadMethod} />
+                                </ButtonGroup>
+                            </EmptyContent>
+                        )}
+                    </Empty>
                 ) : (
-                    <ul className="space-y-0.5">
-                        {filteredItems.map((item) => {
+                    <div className="divide-y divide-border rounded-lg border">
+                        {/* Folders first */}
+                        {folders.map((item) => {
                             const name = item.key.replace(prefix, "").replace(/\/$/, "")
-                            const href = item.type === "folder" ? `/bucket/${bucketId}/${[...path, name].join("/")}` : "#"
+                            const href = `/bucket/${bucketId}/${[...path, name].join("/")}`
 
                             return (
-                                <li key={item.key}>
-                                    {item.type === "folder" ? (
-                                        <Link
-                                            href={href}
-                                            className="flex items-center justify-between py-1 rounded hover:bg-accent transition-colors"
-                                        >
-                                            <span className="flex items-center gap-2 min-w-0">
-                                                <span className="w-5 flex justify-center shrink-0">
-                                                    <Folder size={16} className="text-muted-foreground" />
-                                                </span>
-                                                <span className="truncate">{name}</span>
-                                            </span>
-                                        </Link>
-                                    ) : (
-                                        <button
-                                            onClick={() => handleFileClick(item)}
-                                            className="flex items-center justify-between w-full py-1 rounded hover:bg-accent transition-colors text-left"
-                                        >
-                                            <span className="flex items-center gap-2 min-w-0">
-                                                <span className="w-5 flex justify-center shrink-0">
-                                                    <File size={16} className="text-muted-foreground" />
-                                                </span>
-                                                <span className="truncate">{name}</span>
-                                            </span>
-                                            {item.size !== undefined && (
-                                                <span className="text-sm text-muted-foreground ml-4 shrink-0">{formatSize(item.size)}</span>
-                                            )}
-                                        </button>
-                                    )}
-                                </li>
+                                <Link
+                                    key={item.key}
+                                    href={href}
+                                    className="flex items-center gap-4 p-4 transition-colors hover:bg-muted/50"
+                                >
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                        <Folder className="size-5 text-primary" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-medium">{name}</p>
+                                        <p className="text-sm text-muted-foreground">Directory</p>
+                                    </div>
+                                    <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+                                </Link>
                             )
                         })}
-                    </ul>
-                )}
 
-                <FileDrawer
-                    isOpen={isOpen}
-                    onClose={() => setIsOpen(false)}
-                    file={selectedFile}
-                    refresh={refreshFiles}
-                />
+                        {/* Files */}
+                        {files.map((item) => {
+                            const name = item.key.replace(prefix, "").replace(/\/$/, "")
+
+                            return (
+                                <button
+                                    key={item.key}
+                                    onClick={() => handleFileClick(item)}
+                                    className="flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-muted/50"
+                                >
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                                        <File className="size-5 text-muted-foreground" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-medium">{name}</p>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            {item.size !== undefined && (
+                                                <span>{formatSize(item.size)}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
+
+            <FileDrawer
+                isOpen={isOpen}
+                onClose={() => setIsOpen(false)}
+                file={selectedFile}
+                refresh={refreshFiles}
+            />
         </div>
     )
 }
