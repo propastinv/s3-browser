@@ -9,14 +9,13 @@ import { getPageTitle } from "@/lib/utils"
 import { BucketBreadcrumb } from "@/components/bucket-breadcrumb"
 
 
-
 export function SiteHeader() {
   const pathname = usePathname()
   const segments = pathname.split("/").filter(Boolean)
 
   const isBucketPage = segments[0] === "bucket"
-  const bucketName = isBucketPage ? segments[1] : null
-  const bucketPath = isBucketPage ? segments.slice(2) : []
+  const bucketName = isBucketPage ? decodeURIComponent(segments[1] || "") : null
+  const bucketPath = isBucketPage ? segments.slice(2).map(decodeURIComponent) : []
 
   const title = getPageTitle(pathname)
 

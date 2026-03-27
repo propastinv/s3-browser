@@ -18,7 +18,7 @@ import { Refresh } from "@/components/Refresh"
 export default function BucketPage() {
     const params = useParams()
     const bucketId = params.bucketId as string
-    const path = Array.isArray(params.path) ? params.path : []
+    const path = Array.isArray(params.path) ? params.path.map(decodeURIComponent) : []
     const prefix = path.length ? path.join("/") + "/" : ""
 
     const [items, setItems] = useState<BucketObject[]>([])

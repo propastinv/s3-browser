@@ -35,7 +35,7 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
     let prefix = "";
     if (parts[0] === "bucket") {
         bucketId = parts[1];
-        prefix = parts.slice(2).join("/");
+        prefix = parts.slice(2).map(decodeURIComponent).join("/");
     }
 
     const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
