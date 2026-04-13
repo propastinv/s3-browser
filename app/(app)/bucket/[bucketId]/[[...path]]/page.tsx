@@ -57,8 +57,8 @@ export default function BucketPage() {
     return (
         <div className="flex h-full flex-col">
             {/* Header */}
-            <div className="border-b bg-background px-4 py-3">
-                <div className="flex items-center gap-3">
+            <div className="border-b bg-background px-3 py-2">
+                <div className="flex items-center gap-2">
                     <InputGroup className="flex-1">
                         <InputGroupAddon align="inline-start">
                             <Search className="text-muted-foreground" />
@@ -80,7 +80,7 @@ export default function BucketPage() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-3">
                 {loading ? (
                     <Loader />
                 ) : filteredItems.length === 0 ? (
@@ -108,7 +108,7 @@ export default function BucketPage() {
                         )}
                     </Empty>
                 ) : (
-                    <div className="divide-y divide-border rounded-lg border">
+                    <div className="divide-y divide-border rounded-md border text-base">
                         {/* Folders first */}
                         {folders.map((item) => {
                             const name = item.key.replace(prefix, "").replace(/\/$/, "")
@@ -118,16 +118,11 @@ export default function BucketPage() {
                                 <Link
                                     key={item.key}
                                     href={href}
-                                    className="flex items-center gap-4 p-4 transition-colors hover:bg-muted/50"
+                                    className="flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-muted/50"
                                 >
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                        <Folder className="size-5 text-primary" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate font-medium">{name}</p>
-                                        <p className="text-sm text-muted-foreground">Directory</p>
-                                    </div>
-                                    <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+                                    <Folder className="size-4 shrink-0 text-amber-300" fill="currentColor" />
+                                    <span className="min-w-0 flex-1 truncate">{name}</span>
+                                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                                 </Link>
                             )
                         })}
@@ -140,19 +135,13 @@ export default function BucketPage() {
                                 <button
                                     key={item.key}
                                     onClick={() => handleFileClick(item)}
-                                    className="flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-muted/50"
+                                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50"
                                 >
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                                        <File className="size-5 text-muted-foreground" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate font-medium">{name}</p>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            {item.size !== undefined && (
-                                                <span>{formatSize(item.size)}</span>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <File className="size-4 shrink-0 text-blue-500" />
+                                    <span className="min-w-0 flex-1 truncate">{name}</span>
+                                    {item.size !== undefined && (
+                                        <span className="shrink-0 text-xs text-muted-foreground">{formatSize(item.size)}</span>
+                                    )}
                                 </button>
                             )
                         })}
