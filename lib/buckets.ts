@@ -18,7 +18,11 @@ export function getBucketById(id: string, groups: string[]): BucketConfig | unde
     const bucket = buckets.find(b => b.id === id);
     if (!bucket) return undefined;
 
-    if (!groups.includes(bucket.group)) return undefined;
+    // Support comma-separated groups
+    const allowedGroups = bucket.group.split(',').map(g => g.trim());
+    const hasAccess = allowedGroups.some(group => groups.includes(group));
+
+    if (!hasAccess) return undefined;
 
     return bucket;
 }
@@ -28,5 +32,8 @@ export function getBucketsForGroups(groups: string[]): BucketConfig[] {
     if (groups.includes('superadmin')) {
         return buckets;
     }
-    return buckets.filter(b => groups.includes(b.group));
+    return buckets.filter(b => {
+        const allowedGroups = b.group.split(',').map(g => g.trim());
+        return allowedGroups.some(group => groups.includes(group));
+    });
 }
