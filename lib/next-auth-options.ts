@@ -1,8 +1,11 @@
 import { logoutRequest, refreshTokenRequest } from "@/lib/oidc";
 import type { Account, AuthOptions, User } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
 import { ProviderType } from "next-auth/providers/index";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -15,10 +18,51 @@ export const authOptions: AuthOptions = {
         return profile;
       },
     }),
+    ...(process.env.ENABLE_LOCAL_AUTH !== "false"
+      ? [
+          CredentialsProvider({
+            name: "Credentials",
+            credentials: {
+              username: { label: "Username", type: "text" },
+              password: { label: "Password", type: "password" },
+            },
+            async authorize(credentials) {
+              if (!credentials?.username || !credentials?.password) return null;
+
+              const user = await prisma.user.findUnique({
+                where: { username: credentials.username },
+              });
+
+              if (!user) return null;
+
+              const isValid = await bcrypt.compare(credentials.password, user.password);
+              if (!isValid) return null;
+
+              return {
+                id: user.id.toString(),
+                name: user.username,
+                preferred_username: user.username,
+                groups: [user.role === "superadmin" ? "superadmin" : "user"],
+                sub: user.id.toString(),
+                email: `${user.username}@local`,
+                email_verified: true,
+                avatar_url: "",
+                telephone: "",
+                position: "",
+                org_name: "",
+                given_name: user.username,
+                family_name: "",
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   events: {
     async signOut({ token }) {
-      await logoutRequest(token.refresh_token);
+      if (token.refresh_token) {
+        await logoutRequest(token.refresh_token);
+      }
     },
   },
   callbacks: {
@@ -32,11 +76,20 @@ export const authOptions: AuthOptions = {
       user: User | null;
     }) {
       if (account && user) {
+        if (account.provider === "credentials") {
+          token.user = user;
+          token.access_token_expired = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+          return token;
+        }
         token.access_token = account.access_token;
         token.refresh_token = account.refresh_token;
         token.access_token_expired = Date.now() + (account.expires_in - 15) * 1000;
         token.refresh_token_expired = Date.now() + (account.refresh_expires_in - 15) * 1000;
         token.user = user;
+        return token;
+      }
+
+      if (token.user?.email?.endsWith("@local")) {
         return token;
       }
 

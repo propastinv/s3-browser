@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes"
 import { SessionProvider } from "next-auth/react";
 import SessionWatcher from "@/components/SessionWatcher";
 import { Session } from "next-auth";
+import { Toaster } from "@/components/ui/sonner"
 
 type ProvidersProps = {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export default function Providers({ children, session }: ProvidersProps) {
       >
         <SessionWatcher />
         {children}
+        <Toaster position="top-right" />
       </ThemeProvider>
     </SessionProvider>
   );

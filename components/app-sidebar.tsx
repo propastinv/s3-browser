@@ -51,7 +51,7 @@ export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSi
         })),
       },
       { title: "Recent", url: "/recent", icon: IconLogs },
-      ...(hasBackend
+      ...(hasBackend && session?.user?.groups?.includes("superadmin")
         ? [
           { title: "Users", url: "/users", icon: IconUsers },
         ]
@@ -59,7 +59,9 @@ export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSi
     ],
     navSecondary: hasBackend
       ? [
-        { title: "Settings", url: "/settings", icon: IconSettings },
+        ...(session?.user?.groups?.includes("superadmin")
+          ? [{ title: "Settings", url: "/settings", icon: IconSettings }]
+          : []),
         { title: "Search", url: "#", icon: IconSearch },
       ]
       : [],

@@ -33,7 +33,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-  const hasBackend = Boolean(process.env.BACKEND_URL);
+  const hasBackend = Boolean(process.env.DATABASE_URL);
   const buckets = getBucketsForGroups(session?.user?.groups ?? []);
   const companyName = process.env.COMPANY_NAME as string;
   return (

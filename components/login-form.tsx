@@ -1,3 +1,5 @@
+"use client"
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,53 +11,95 @@ import {
 } from "@/components/ui/card"
 import {
     Field,
-    FieldDescription,
     FieldGroup,
     FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { SignIn } from "@/components/next-auth-buttons";
+import { signIn } from "next-auth/react"
+import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 
 export function LoginForm({
     className,
     ...props
 }: React.ComponentProps<"div">) {
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const callbackUrl = searchParams.get("callbackUrl") || "/buckets"
+    const [isLoading, setIsLoading] = useState(false)
+
+    async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault()
+        setIsLoading(true)
+
+        const formData = new FormData(event.currentTarget)
+        const username = formData.get("username") as string
+        const password = formData.get("password") as string
+
+        try {
+            const result = await signIn("credentials", {
+                username,
+                password,
+                redirect: false,
+                callbackUrl,
+            })
+
+            if (result?.error) {
+                toast.error("Invalid username or password")
+            } else if (result?.ok) {
+                toast.success("Logged in successfully")
+                router.push(callbackUrl)
+                router.refresh()
+            }
+        } catch (error) {
+            toast.error("Something went wrong. Please try again.")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card>
                 <CardHeader>
                     <CardTitle>Login to your account</CardTitle>
                     <CardDescription>
-                        Enter your email below to login to your account
+                        Enter your credentials below to login to your account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form>
-                        <FieldGroup>
+                    <form onSubmit={onSubmit}>
+                        <FieldGroup className="gap-4">
                             <Field>
-                                <FieldLabel htmlFor="email">Email</FieldLabel>
+                                <FieldLabel htmlFor="username">Username</FieldLabel>
                                 <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="m@example.com"
+                                    id="username"
+                                    name="username"
+                                    type="text"
+                                    placeholder="admin"
                                     required
                                 />
                             </Field>
                             <Field>
                                 <div className="flex items-center">
                                     <FieldLabel htmlFor="password">Password</FieldLabel>
-                                    <a
-                                        href="#"
-                                        className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                                    >
-                                        Forgot your password?
-                                    </a>
                                 </div>
-                                <Input id="password" type="password" required />
+                                <Input id="password" name="password" type="password" required />
                             </Field>
                             <Field>
-                                <Button type="submit">Login</Button>
-                                <SignIn />
+                                <div className="flex flex-col gap-2">
+                                    <Button type="submit" disabled={isLoading}>
+                                        {isLoading ? "Logging in..." : "Login"}
+                                    </Button>
+                                    <div className="relative">
+                                        <div className="absolute inset-0 flex items-center">
+                                            <span className="w-full border-t" />
+                                        </div>
+                                    </div>
+                                    <SignIn />
+                                </div>
                             </Field>
                         </FieldGroup>
                     </form>
