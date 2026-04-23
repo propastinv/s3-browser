@@ -20,42 +20,42 @@ export const authOptions: AuthOptions = {
     }),
     ...(process.env.ENABLE_LOCAL_AUTH !== "false"
       ? [
-          CredentialsProvider({
-            name: "Credentials",
-            credentials: {
-              username: { label: "Username", type: "text" },
-              password: { label: "Password", type: "password" },
-            },
-            async authorize(credentials) {
-              if (!credentials?.username || !credentials?.password) return null;
+        CredentialsProvider({
+          name: "Credentials",
+          credentials: {
+            username: { label: "Username", type: "text" },
+            password: { label: "Password", type: "password" },
+          },
+          async authorize(credentials) {
+            if (!credentials?.username || !credentials?.password) return null;
 
-              const user = await prisma.user.findUnique({
-                where: { username: credentials.username },
-              });
+            const user = await prisma.user.findUnique({
+              where: { username: credentials.username },
+            });
 
-              if (!user) return null;
+            if (!user) return null;
 
-              const isValid = await bcrypt.compare(credentials.password, user.password);
-              if (!isValid) return null;
+            const isValid = await bcrypt.compare(credentials.password, user.password);
+            if (!isValid) return null;
 
-              return {
-                id: user.id.toString(),
-                name: user.username,
-                preferred_username: user.username,
-                groups: [user.role === "superadmin" ? "superadmin" : "user"],
-                sub: user.id.toString(),
-                email: `${user.username}@local`,
-                email_verified: true,
-                avatar_url: "",
-                telephone: "",
-                position: "",
-                org_name: "",
-                given_name: user.username,
-                family_name: "",
-              };
-            },
-          }),
-        ]
+            return {
+              id: user.id.toString(),
+              name: user.username,
+              preferred_username: user.username,
+              groups: [user.role === "superadmin" ? "superadmin" : "user"],
+              sub: user.id.toString(),
+              email: `${user.username}@local`,
+              email_verified: true,
+              avatar_url: "",
+              telephone: "",
+              position: "",
+              org_name: "",
+              given_name: user.username,
+              family_name: "",
+            };
+          },
+        }),
+      ]
       : []),
   ],
   events: {
@@ -109,7 +109,9 @@ export const authOptions: AuthOptions = {
         }
 
 
-        if (response?.status !== 200) throw new Error("Failed to refresh token");
+        if (response.status !== 200) {
+          throw new Error("Failed to refresh token");
+        }
 
         return {
           ...token,
