@@ -67,7 +67,8 @@ export async function GET(
             .catch(err => console.error('Background sync failed:', err));
         return NextResponse.json({
             items: [...folders, ...files],
-            uploadMethod: bucket.uploadMethod || "proxy"
+            uploadMethod: bucket.uploadMethod || "proxy",
+            publicUrlPrefix: bucket.publicUrlPrefix
         });
     } catch (err) {
         console.error(err);

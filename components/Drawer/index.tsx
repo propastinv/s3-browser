@@ -17,13 +17,12 @@ import {
     DrawerHeader,
     DrawerTitle,
     DrawerFooter,
-    DrawerClose,
     DrawerDescription
 } from "@/components/ui/drawer"
 import { ClipboardCopy } from 'lucide-react';
 import { Button } from "@/components/ui/button"
 
-export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
+export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: DrawerProps) {
     const pathname = usePathname()
     const parts = pathname.split("/").filter(Boolean)
 
@@ -108,7 +107,8 @@ export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
         if (!file) return
 
         try {
-            await navigator.clipboard.writeText(file.key)
+            const textToCopy = publicUrlPrefix ? `${publicUrlPrefix}${file.key}` : file.key
+            await navigator.clipboard.writeText(textToCopy)
             setCopied(true)
 
             setTimeout(() => setCopied(false), 1500)
@@ -136,7 +136,18 @@ export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
                     <DrawerDescription>
                         <span className="flex items-center justify-between gap-2">
                             <span className="truncate pr-2">
-                                {file?.key}
+                                {publicUrlPrefix ? (
+                                    <a
+                                        href={`${publicUrlPrefix}${file?.key}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-500 hover:underline"
+                                    >
+                                        {file?.key}
+                                    </a>
+                                ) : (
+                                    file?.key
+                                )}
                             </span>
 
                             <TooltipProvider>
@@ -154,7 +165,7 @@ export function FileDrawer({ isOpen, onClose, file, refresh }: DrawerProps) {
                                     </TooltipTrigger>
 
                                     <TooltipContent side="left">
-                                        {copied ? "Copied!" : "Copy path"}
+                                        {copied ? "Copied!" : publicUrlPrefix ? "Copy URL" : "Copy path"}
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>

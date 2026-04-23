@@ -66,11 +66,14 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
         const key = prefix ? `${prefix}/${file.name}` : file.name;
 
         // 1. init multipart
+        let contentType = file.type;
+
         const initRes = await fetch(`/api/upload/init`, {
             method: "POST",
             body: JSON.stringify({
                 bucketId,
                 key,
+                contentType: contentType || "application/octet-stream",
             }),
         }).then(r => r.json());
 

@@ -5,4 +5,5 @@ export interface DrawerProps {
     onClose: () => void;
     file?: BucketObject;
     refresh: () => Promise<void>;
+    publicUrlPrefix?: string;
 }

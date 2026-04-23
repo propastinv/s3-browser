@@ -26,6 +26,7 @@ export default function BucketPage() {
     const [isOpen, setIsOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [uploadMethod, setUploadMethod] = useState<"proxy" | "direct">("proxy")
+    const [publicUrlPrefix, setPublicUrlPrefix] = useState<string | undefined>(undefined)
     const [selectedFile, setSelectedFile] = useState<BucketObject | undefined>(undefined)
 
     async function refreshFiles() {
@@ -34,6 +35,7 @@ export default function BucketPage() {
         const data = await res.json()
         setItems(data.items || [])
         setUploadMethod(data.uploadMethod || "proxy")
+        setPublicUrlPrefix(data.publicUrlPrefix)
         setLoading(false)
     }
 
@@ -154,6 +156,7 @@ export default function BucketPage() {
                 onClose={() => setIsOpen(false)}
                 file={selectedFile}
                 refresh={refreshFiles}
+                publicUrlPrefix={publicUrlPrefix}
             />
         </div>
     )

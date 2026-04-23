@@ -4,7 +4,7 @@ import { getToken } from 'next-auth/jwt';
 import { getBucketById } from '@/lib/buckets';
 
 export async function POST(req: NextRequest) {
-    const { bucketId, key } = await req.json();
+    const { bucketId, key, contentType } = await req.json();
 
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     if (!token) {
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         new CreateMultipartUploadCommand({
             Bucket: bucket.bucket,
             Key: key,
+            ContentType: contentType || 'application/octet-stream',
         })
     );
 
