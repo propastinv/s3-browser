@@ -59,10 +59,10 @@ export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSi
     ],
     navSecondary: hasBackend
       ? [
-        ...(session?.user?.groups?.includes("superadmin")
+        /* ...(session?.user?.groups?.includes("superadmin")
           ? [{ title: "Settings", url: "/settings", icon: IconSettings }]
-          : []),
-        { title: "Search", url: "#", icon: IconSearch },
+          : []), */
+        // { title: "Search", url: "#", icon: IconSearch },
       ]
       : [],
   };
