@@ -14,14 +14,16 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { normalizeFilename } from "@/lib/helpers"
 
 export interface UploadProps {
     refresh: () => Promise<void>;
+    addTimestamp: boolean;
     className?: string;
     method?: "proxy" | "direct";
 }
 
-export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
+export function Upload({ refresh, addTimestamp, className, method = "proxy" }: UploadProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
@@ -63,7 +65,8 @@ export function Upload({ refresh, className, method = "proxy" }: UploadProps) {
     const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
     async function uploadFileDirect(file: File) {
-        const key = prefix ? `${prefix}/${file.name}` : file.name;
+        const originalName = normalizeFilename(file.name, addTimestamp);
+        const key = prefix ? `${prefix}/${originalName}` : originalName;
 
         // 1. init multipart
         let contentType = file.type;

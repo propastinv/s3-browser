@@ -10,6 +10,7 @@ export interface BucketConfig {
     secretAccessKey: string;
     uploadMethod?: "proxy" | "direct";
     publicUrlPrefix?: string;
+    addTimestamp?: boolean;
 }
 
 export interface BucketObject {

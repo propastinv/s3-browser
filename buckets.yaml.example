@@ -16,3 +16,4 @@ buckets:
     accessKeyId: YOUR_KEY_2
     secretAccessKey: YOUR_SECRET_2
     publicUrlPrefix: "https://example.com/"
+    addTimestamp: false

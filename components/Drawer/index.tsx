@@ -107,10 +107,18 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
         if (!file) return
 
         try {
-            const textToCopy = publicUrlPrefix ? `${publicUrlPrefix}${file.key}` : file.key
-            await navigator.clipboard.writeText(textToCopy)
-            setCopied(true)
+            const encodedKey = file.key
+                .split("/")
+                .map(part => encodeURIComponent(part))
+                .join("/")
 
+            const textToCopy = publicUrlPrefix
+                ? `${publicUrlPrefix}${encodedKey}`
+                : file.key
+
+            await navigator.clipboard.writeText(textToCopy)
+
+            setCopied(true)
             setTimeout(() => setCopied(false), 1500)
         } catch (err) {
             console.error("Failed to copy", err)
@@ -138,7 +146,10 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
                             <span className="truncate pr-2">
                                 {publicUrlPrefix ? (
                                     <a
-                                        href={`${publicUrlPrefix}${file?.key}`}
+                                        href={`${publicUrlPrefix}${file?.key
+                                            ?.split("/")
+                                            .map(part => encodeURIComponent(part))
+                                            .join("/")}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-blue-500 hover:underline"

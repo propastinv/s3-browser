@@ -27,16 +27,20 @@ export default function BucketPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [uploadMethod, setUploadMethod] = useState<"proxy" | "direct">("proxy")
     const [publicUrlPrefix, setPublicUrlPrefix] = useState<string | undefined>(undefined)
+    const [addTimestamp, setAddTimestamp] = useState<boolean>(false)
     const [selectedFile, setSelectedFile] = useState<BucketObject | undefined>(undefined)
 
     async function refreshFiles() {
         setLoading(true)
         const res = await fetch(`/api/bucket/${bucketId}?prefix=${encodeURIComponent(prefix)}`)
+        console.log("refreshFiles res: ", res);
         const data = await res.json()
         setItems(data.items || [])
         setUploadMethod(data.uploadMethod || "proxy")
         setPublicUrlPrefix(data.publicUrlPrefix)
+        setAddTimestamp(data.addTimestamp || false)
         setLoading(false)
+
     }
 
     useEffect(() => {
@@ -75,7 +79,7 @@ export default function BucketPage() {
 
                     <ButtonGroup className="shrink-0">
                         <New className="bg-blue-600 text-white hover:bg-blue-700" />
-                        <Upload refresh={refreshFiles} className="bg-green-600 text-white hover:bg-green-700" method={uploadMethod} />
+                        <Upload refresh={refreshFiles} addTimestamp={addTimestamp} className="bg-green-600 text-white hover:bg-green-700" method={uploadMethod} />
                         <Refresh refresh={refreshFiles} />
                     </ButtonGroup>
                 </div>
@@ -104,7 +108,7 @@ export default function BucketPage() {
                             <EmptyContent>
                                 <ButtonGroup>
                                     <New className="bg-blue-600 text-white hover:bg-blue-700" />
-                                    <Upload refresh={refreshFiles} className="bg-green-600 text-white hover:bg-green-700" method={uploadMethod} />
+                                    <Upload refresh={refreshFiles} addTimestamp={addTimestamp} className="bg-green-600 text-white hover:bg-green-700" method={uploadMethod} />
                                 </ButtonGroup>
                             </EmptyContent>
                         )}

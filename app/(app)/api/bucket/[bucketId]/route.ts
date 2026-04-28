@@ -68,7 +68,8 @@ export async function GET(
         return NextResponse.json({
             items: [...folders, ...files],
             uploadMethod: bucket.uploadMethod || "proxy",
-            publicUrlPrefix: bucket.publicUrlPrefix
+            publicUrlPrefix: bucket.publicUrlPrefix,
+            addTimestamp: bucket.addTimestamp ?? false,
         });
     } catch (err) {
         console.error(err);
