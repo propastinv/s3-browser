@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/drawer"
 import { ClipboardCopy } from 'lucide-react';
 import { Button } from "@/components/ui/button"
+import { handleCopyPath } from "@/lib/copy"
 
 export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: DrawerProps) {
     const pathname = usePathname()
@@ -103,27 +104,14 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
         window.open(url, "_blank")
     }
 
-    const handleCopyPath = async () => {
-        if (!file) return
-
-        try {
-            const encodedKey = file.key
-                .split("/")
-                .map(part => encodeURIComponent(part))
-                .join("/")
-
-            const textToCopy = publicUrlPrefix
-                ? `${publicUrlPrefix}${encodedKey}`
-                : file.key
-
-            await navigator.clipboard.writeText(textToCopy)
-
+    const onCopyPath = () => handleCopyPath(
+        file,
+        publicUrlPrefix,
+        () => {
             setCopied(true)
             setTimeout(() => setCopied(false), 1500)
-        } catch (err) {
-            console.error("Failed to copy", err)
         }
-    }
+    )
 
 
 
@@ -167,7 +155,7 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={handleCopyPath}
+                                            onClick={onCopyPath}
                                             title="Copy path"
                                             className="h-7 w-7 p-0 shrink-0"
                                         >

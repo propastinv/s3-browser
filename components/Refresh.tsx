@@ -37,7 +37,9 @@ export function Refresh({ refresh, className }: RefreshProps) {
                 size={16}
                 className={loading ? "animate-spin" : ""}
             />
-            Refresh
+            <span className="hidden sm:inline">
+                Refresh
+            </span>
         </Button>
     )
 }

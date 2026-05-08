@@ -36,7 +36,9 @@ export function New({ className }: { className?: string }) {
                 className={cn(className)}
             >
                 <CirclePlus className="size-4" />
-                New
+                <span className="hidden sm:inline">
+                    New
+                </span>
             </Button>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>

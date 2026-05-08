@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import {
     S3Client,
     ListObjectsV2Command,
-    DeleteObjectCommand
+    DeleteObjectsCommand
 } from '@aws-sdk/client-s3';
 
 export async function GET(
@@ -98,10 +98,13 @@ export async function DELETE(
         return NextResponse.json({ error: 'Bucket not found' }, { status: 404 });
     }
 
-    const { fileKey } = await req.json();
+    const body = await req.json();
+    const { fileKey, fileKeys } = body;
 
-    if (!fileKey) {
-        return NextResponse.json({ error: 'No file specified' }, { status: 400 });
+    const keysToDelete: string[] = fileKeys || (fileKey ? [fileKey] : []);
+
+    if (keysToDelete.length === 0) {
+        return NextResponse.json({ error: 'No files specified' }, { status: 400 });
     }
 
     const client = new S3Client({
@@ -115,25 +118,67 @@ export async function DELETE(
     });
 
     try {
-        await client.send(new DeleteObjectCommand({
-            Bucket: bucket.bucket,
-            Key: fileKey,
-        }));
+        const finalKeysToDelete = new Set<string>();
 
-        await prisma.s3FileActionLog.create({
-            data: {
-                action: 'DELETE',
-                bucket: bucket.id,
-                key: fileKey,
-                group: bucket.group,
-                userName: token.name || token.email || 'Unknown',
+        for (const key of keysToDelete) {
+            if (key.endsWith('/')) {
+                let continuationToken: string | undefined;
+                do {
+                    const listCommand = new ListObjectsV2Command({
+                        Bucket: bucket.bucket,
+                        Prefix: key,
+                        ContinuationToken: continuationToken,
+                    });
+                    const listData = await client.send(listCommand);
+                    if (listData.Contents) {
+                        for (const obj of listData.Contents) {
+                            if (obj.Key) finalKeysToDelete.add(obj.Key);
+                        }
+                    }
+                    continuationToken = listData.NextContinuationToken;
+                } while (continuationToken);
+                finalKeysToDelete.add(key);
+            } else {
+                finalKeysToDelete.add(key);
             }
-        }).catch(e => console.error('Failed to log delete action:', e));
+        }
+
+        const allKeys = Array.from(finalKeysToDelete);
+
+        for (let i = 0; i < allKeys.length; i += 1000) {
+            const chunk = allKeys.slice(i, i + 1000);
+            await client.send(new DeleteObjectsCommand({
+                Bucket: bucket.bucket,
+                Delete: {
+                    Objects: chunk.map(Key => ({ Key })),
+                    Quiet: true,
+                },
+            }));
+        }
+
+        for (const key of keysToDelete) {
+            await prisma.s3FileActionLog.create({
+                data: {
+                    action: 'DELETE',
+                    bucket: bucket.id,
+                    key: key,
+                    group: bucket.group,
+                    userName: token.name || token.email || 'Unknown',
+                }
+            }).catch(e => console.error('Failed to log delete action:', e));
+        }
+
+        const orConditions = keysToDelete.map(key => {
+            if (key.endsWith('/')) {
+                return { key: { startsWith: key } };
+            }
+            return { key };
+        });
 
         await prisma.s3FileIndex.deleteMany({
             where: {
                 bucket: bucket.id,
-                key: fileKey,
+                OR: orConditions,
             }
         }).catch(e => console.error('Failed to delete from index:', e));
 

@@ -231,7 +231,9 @@ export function Upload({ refresh, addTimestamp, className, method = "proxy" }: U
                 className={className}
             >
                 <UploadCloud className="size-4" />
-                Upload
+                <span className="hidden sm:inline">
+                    Upload
+                </span>
             </Button>
 
             <Dialog open={isOpen} onOpenChange={handleOpenChange}>
