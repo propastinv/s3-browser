@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Folder, File, Search, FolderOpen, Trash2, SortAsc, SortDesc, Clock, HardDrive, Type } from "lucide-react"
+import { Folder, File, Search, FolderOpen, Trash2, SortAsc, SortDesc, Clock, HardDrive, Type, Copy, Check } from "lucide-react"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
@@ -68,6 +68,15 @@ export default function BucketPage() {
     const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
     const [droppedFiles, setDroppedFiles] = useState<File[]>([])
+    const [copiedKey, setCopiedKey] = useState<string | null>(null)
+
+    const copyWithFeedback = (item: BucketObject) => {
+        handleCopyPath(item, publicUrlPrefix, () => {
+            toast.success("Copied")
+            setCopiedKey(item.key)
+            setTimeout(() => setCopiedKey(null), 2000)
+        }, () => toast.error("Failed to copy"))
+    }
 
 
     async function refreshFiles() {
@@ -350,6 +359,23 @@ export default function BucketPage() {
                                                     <div className="flex items-center gap-2.5 min-w-0">
                                                         <Folder className="size-5 shrink-0 text-amber-300" fill="currentColor" />
                                                         <span className="truncate">{name}</span>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-6 w-6 p-0 shrink-0 ml-auto opacity-0 group-hover:opacity-100"
+                                                                    onClick={(e) => { e.stopPropagation(); copyWithFeedback(item) }}
+                                                                >
+                                                                    <span key={copiedKey === item.key ? 'check' : 'copy'} className="animate-in zoom-in-75 fade-in duration-150">
+                                                                        {copiedKey === item.key
+                                                                            ? <Check className="size-3.5 text-green-500" />
+                                                                            : <Copy className="size-3.5" />}
+                                                                    </span>
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Copy {publicUrlPrefix ? "URL" : "path"}</TooltipContent>
+                                                        </Tooltip>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="hidden sm:table-cell text-right text-muted-foreground px-2 py-2 w-36">
@@ -362,7 +388,6 @@ export default function BucketPage() {
                                                         item={item}
                                                         isFolder={true}
                                                         refresh={refreshFiles}
-                                                        publicUrlPrefix={publicUrlPrefix}
                                                         onDelete={(key) => handleBulkDelete([key])}
                                                     />
                                                 </TableCell>
@@ -397,6 +422,23 @@ export default function BucketPage() {
                                                             <File className="size-5 shrink-0 text-blue-500" />
                                                         )}
                                                         <span className="truncate">{name}</span>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-6 w-6 p-0 shrink-0 ml-auto opacity-0 group-hover:opacity-100"
+                                                                    onClick={(e) => { e.stopPropagation(); copyWithFeedback(item) }}
+                                                                >
+                                                                    <span key={copiedKey === item.key ? 'check' : 'copy'} className="animate-in zoom-in-75 fade-in duration-150">
+                                                                        {copiedKey === item.key
+                                                                            ? <Check className="size-3.5 text-green-500" />
+                                                                            : <Copy className="size-3.5" />}
+                                                                    </span>
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>Copy {publicUrlPrefix ? "URL" : "path"}</TooltipContent>
+                                                        </Tooltip>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="hidden sm:table-cell text-right text-muted-foreground px-2 py-2 w-36">
@@ -411,7 +453,6 @@ export default function BucketPage() {
                                                         item={item}
                                                         isFolder={false}
                                                         refresh={refreshFiles}
-                                                        publicUrlPrefix={publicUrlPrefix}
                                                         onDelete={(key) => handleBulkDelete([key])}
                                                     />
                                                 </TableCell>
