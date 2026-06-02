@@ -42,7 +42,7 @@ export function ItemActions({
     )
 
     return (
-        <>
+        <div onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
@@ -89,6 +89,6 @@ export function ItemActions({
                 open={renameOpen}
                 onOpenChange={setRenameOpen}
             />
-        </>
+        </div>
     )
 }

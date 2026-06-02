@@ -199,7 +199,7 @@ export default function BucketPage() {
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <ButtonGroup className="flex-1 sm:flex-initial">
                             <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-                                <SelectTrigger className="flex-1 sm:w-[130px]" >
+                                <SelectTrigger className="flex-1 sm:w-32.5" >
                                     <SelectValue placeholder="Sort by" />
                                 </SelectTrigger>
                                 <SelectContent>
