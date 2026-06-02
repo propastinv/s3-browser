@@ -12,6 +12,7 @@ import {
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import pkg from "@/package.json"
 import {
   Sidebar,
   SidebarContent,
@@ -91,6 +92,9 @@ export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSi
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
+        <p className="px-2 text-[11px] text-foreground/50 text-center">
+          v{pkg.version}
+        </p>
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
