@@ -9,7 +9,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { IconArrowUpRight, IconTrash, IconClock } from "@tabler/icons-react"
+import { IconArrowUpRight, IconTrash, IconClock, IconArrowsMoveHorizontal } from "@tabler/icons-react"
 
 interface ActionLog {
     id: number
@@ -49,6 +49,13 @@ export function RecentActionsTable({ actions }: RecentActionsTableProps) {
                     <Badge variant="outline" className="gap-1 border-rose-500/50 bg-rose-500/10 text-rose-600 dark:text-rose-400">
                         <IconTrash size={14} />
                         Delete
+                    </Badge>
+                )
+            case 'MOVE':
+                return (
+                    <Badge variant="outline" className="gap-1 border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <IconArrowsMoveHorizontal size={14} />
+                        Move
                     </Badge>
                 )
             default:
