@@ -26,12 +26,12 @@ import { useSession } from "next-auth/react";
 import { BucketConfig } from '@/types/bucket';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  hasBackend: boolean;
+  hasDatabase: boolean;
   buckets: BucketConfig[];
   companyName: string;
 }
 
-export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSidebarProps) {
+export function AppSidebar({ hasDatabase, buckets, companyName, ...props }: AppSidebarProps) {
   const { data: session } = useSession();
 
   const user = {
@@ -51,14 +51,14 @@ export function AppSidebar({ hasBackend, buckets, companyName, ...props }: AppSi
           url: `/bucket/${encodeURIComponent(bucket.id)}`,
         })),
       },
-      { title: "Recent", url: "/recent", icon: IconLogs },
-      ...(hasBackend && session?.user?.groups?.includes("superadmin")
+      ...(hasDatabase
         ? [
           { title: "Users", url: "/users", icon: IconUsers },
+          { title: "Recent", url: "/recent", icon: IconLogs },
         ]
         : []),
     ],
-    navSecondary: hasBackend
+    navSecondary: hasDatabase
       ? [
         /* ...(session?.user?.groups?.includes("superadmin")
           ? [{ title: "Settings", url: "/settings", icon: IconSettings }]

@@ -33,7 +33,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-  const hasBackend = Boolean(process.env.DATABASE_URL);
+  const hasDatabase = Boolean(process.env.DATABASE_URL);
   const buckets = getBucketsForGroups(session?.user?.groups ?? []);
   const companyName = process.env.COMPANY_NAME as string;
   return (
@@ -50,7 +50,7 @@ export default async function RootLayout({
               } as React.CSSProperties
             }
           >
-            <AppSidebar variant="inset" hasBackend={hasBackend} buckets={buckets} companyName={companyName} />
+            <AppSidebar variant="inset" hasDatabase={hasDatabase} buckets={buckets} companyName={companyName} />
             <SidebarInset>
               <SiteHeader />
               {children}
