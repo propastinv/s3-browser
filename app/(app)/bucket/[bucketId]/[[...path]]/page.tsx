@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Folder, File, Search, FolderOpen, Trash2, Copy, SortAsc, SortDesc, Clock, HardDrive, Type } from "lucide-react"
+import { Folder, File, Search, FolderOpen, Trash2, SortAsc, SortDesc, Clock, HardDrive, Type } from "lucide-react"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
@@ -12,9 +12,8 @@ import { FileDrawer } from "@/components/Drawer"
 import { formatSize } from "@/lib/formatters"
 import { BucketObject } from "@/types/bucket"
 import { New } from "@/components/New"
-import { Move } from "@/components/Move"
-import { Rename } from "@/components/Rename"
 import { BulkMove } from "@/components/BulkMove"
+import { ItemActions } from "@/components/ItemActions"
 import { Upload } from "@/components/Upload"
 import { Refresh } from "@/components/Refresh"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -27,6 +26,14 @@ import {
 } from "@/components/ui/tooltip"
 import { handleCopyPath } from "@/lib/copy"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 import {
     Select,
     SelectContent,
@@ -172,15 +179,6 @@ export default function BucketPage() {
         }
     }
 
-    const onCopyPath = (item: BucketObject) => {
-        handleCopyPath(
-            item,
-            publicUrlPrefix,
-            () => toast.success("Path copied to clipboard"),
-            () => toast.error("Failed to copy path")
-        )
-    }
-
     return (
         <div className="flex h-full flex-col">
             {/* Header */}
@@ -313,147 +311,113 @@ export default function BucketPage() {
                         )}
                     </Empty>
                 ) : (
-                    <div className="divide-y divide-border rounded-md border text-base shadow-sm">
-                        {/* Select All Header */}
-                        <div className="flex items-center gap-2.5 px-3 py-2 bg-muted/40 sticky top-0 z-10 border-b">
-                            <Checkbox
-                                checked={selectedKeys.size === filteredItems.length && filteredItems.length > 0}
-                                onCheckedChange={toggleSelectAll}
-                                id="select-all"
-                            />
-                            <label htmlFor="select-all" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer select-none flex-1 min-w-0">
-                                {selectedKeys.size > 0 ? `${selectedKeys.size} selected` : 'Name'}
-                            </label>
-                            <span className="w-[120px] text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right shrink-0 hidden sm:block">
-                                Date
-                            </span>
-                            <span className="w-[80px] text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right shrink-0">
-                                Size
-                            </span>
-                        </div>
-
-                        {/* Folders first */}
+                    <div className="rounded-md border overflow-hidden">
                         <TooltipProvider>
-                            {folders.map((item) => {
-                                const name = item.key.replace(prefix, "").replace(/\/$/, "")
-                                const href = `/bucket/${bucketId}/${[...path, name].join("/")}`
-                                const isSelected = selectedKeys.has(item.key)
-
-                                return (
-                                    <div
-                                        key={item.key}
-                                        onClick={() => router.push(href)}
-                                        className={`group flex items-center gap-2.5 px-3 py-1 transition-colors hover:bg-muted/50 cursor-pointer select-none ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
-                                    >
-                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center">
+                            <Table>
+                                <TableHeader className="bg-muted/40 sticky top-0 z-10">
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="w-10 px-3">
                                             <Checkbox
-                                                checked={isSelected}
-                                                onCheckedChange={() => toggleSelect(item.key)}
+                                                checked={selectedKeys.size === filteredItems.length && filteredItems.length > 0}
+                                                onCheckedChange={toggleSelectAll}
                                             />
-                                        </div>
-                                        <div className="flex flex-1 items-center gap-2.5 min-w-0">
-                                            <div className="size-8 shrink-0 flex items-center justify-center">
-                                                <Folder className="size-5 text-amber-300" fill="currentColor" />
-                                            </div>
-                                            <span className="min-w-0 flex-1 truncate">{name}</span>
-                                        </div>
-
-                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-35 justify-end shrink-0">
-                                            <Move bucketId={bucketId} itemKey={item.key} isFolder={true} refresh={refreshFiles} />
-                                            <Rename bucketId={bucketId} itemKey={item.key} isFolder={true} refresh={refreshFiles} />
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onCopyPath(item)}>
-                                                        <Copy className="size-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Copy path</TooltipContent>
-                                            </Tooltip>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleBulkDelete([item.key])}>
-                                                        <Trash2 className="size-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Delete folder</TooltipContent>
-                                            </Tooltip>
-                                        </div>
-
-                                        <span className="w-[120px] text-sm text-muted-foreground text-right shrink-0 hidden sm:block">
-                                            {item.lastModified ? new Date(item.lastModified).toLocaleDateString() : '—'}
-                                        </span>
-                                        <span className="w-[80px] text-sm text-muted-foreground text-right shrink-0">
-                                            —
-                                        </span>
-                                    </div>
-                                )
-                            })}
-
-                            {/* Files */}
-                            {files.map((item) => {
-                                const name = item.key.replace(prefix, "").replace(/\/$/, "")
-                                const isSelected = selectedKeys.has(item.key)
-
-                                return (
-                                    <div
-                                        key={item.key}
-                                        onClick={() => handleFileClick(item)}
-                                        className={`group flex items-center gap-2.5 px-3 py-1 transition-colors hover:bg-muted/50 cursor-pointer select-none ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
-                                    >
-                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center">
-                                            <Checkbox
-                                                checked={isSelected}
-                                                onCheckedChange={() => toggleSelect(item.key)}
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
-                                            {isImage(item.key) ? (
-                                                <div className="size-8 shrink-0 overflow-hidden rounded bg-muted/50 border flex items-center justify-center">
-                                                    <img
-                                                        src={`/api/bucket/${bucketId}/thumbnail?key=${encodeURIComponent(item.key)}`}
-                                                        alt={name}
-                                                        loading="lazy"
-                                                        className="h-full w-full object-cover"
+                                        </TableHead>
+                                        <TableHead className="px-2">
+                                            {selectedKeys.size > 0 ? `${selectedKeys.size} selected` : 'Name'}
+                                        </TableHead>
+                                        <TableHead className="hidden sm:table-cell text-center w-36 px-2">Date</TableHead>
+                                        <TableHead className="text-center w-24 px-2">Size</TableHead>
+                                        <TableHead className="w-10 px-2" />
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {folders.map((item) => {
+                                        const name = item.key.replace(prefix, "").replace(/\/$/, "")
+                                        const href = `/bucket/${bucketId}/${[...path, name].join("/")}`
+                                        const isSelected = selectedKeys.has(item.key)
+                                        return (
+                                            <TableRow
+                                                key={item.key}
+                                                onClick={() => router.push(href)}
+                                                className={`group cursor-pointer select-none ${isSelected ? 'bg-primary/5 hover:bg-primary/5' : ''}`}
+                                            >
+                                                <TableCell className="px-3 py-2 w-10" onClick={(e) => e.stopPropagation()}>
+                                                    <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(item.key)} />
+                                                </TableCell>
+                                                <TableCell className="px-2 py-2">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <Folder className="size-5 shrink-0 text-amber-300" fill="currentColor" />
+                                                        <span className="truncate">{name}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="hidden sm:table-cell text-right text-muted-foreground px-2 py-2 w-36">
+                                                    {item.lastModified ? new Date(item.lastModified).toLocaleDateString() : '—'}
+                                                </TableCell>
+                                                <TableCell className="text-right text-muted-foreground px-2 py-2 w-24">—</TableCell>
+                                                <TableCell className="px-2 py-2 w-10 text-right">
+                                                    <ItemActions
+                                                        bucketId={bucketId}
+                                                        item={item}
+                                                        isFolder={true}
+                                                        refresh={refreshFiles}
+                                                        publicUrlPrefix={publicUrlPrefix}
+                                                        onDelete={(key) => handleBulkDelete([key])}
                                                     />
-                                                </div>
-                                            ) : (
-                                                <div className="size-8 shrink-0 flex items-center justify-center">
-                                                    <File className="size-5 text-blue-500" />
-                                                </div>
-                                            )}
-                                            <span className="min-w-0 truncate">{name}</span>
-                                        </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
 
-                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-35 justify-end shrink-0">
-                                            <Move bucketId={bucketId} itemKey={item.key} isFolder={false} refresh={refreshFiles} />
-                                            <Rename bucketId={bucketId} itemKey={item.key} isFolder={false} refresh={refreshFiles} />
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onCopyPath(item)}>
-                                                        <Copy className="size-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Copy {publicUrlPrefix ? "URL" : "path"}</TooltipContent>
-                                            </Tooltip>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleBulkDelete([item.key])}>
-                                                        <Trash2 className="size-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Delete file</TooltipContent>
-                                            </Tooltip>
-                                        </div>
-
-                                        <span className="w-[200px] text-sm text-muted-foreground text-right shrink-0 hidden sm:block">
-                                            {item.lastModified ? new Date(item.lastModified).toLocaleString() : '—'}
-                                        </span>
-                                        <span className="w-[80px] text-sm text-muted-foreground text-right shrink-0">
-                                            {item.size !== undefined ? formatSize(item.size) : '—'}
-                                        </span>
-                                    </div>
-                                )
-                            })}
+                                    {files.map((item) => {
+                                        const name = item.key.replace(prefix, "").replace(/\/$/, "")
+                                        const isSelected = selectedKeys.has(item.key)
+                                        return (
+                                            <TableRow
+                                                key={item.key}
+                                                onClick={() => handleFileClick(item)}
+                                                className={`group cursor-pointer select-none ${isSelected ? 'bg-primary/5 hover:bg-primary/5' : ''}`}
+                                            >
+                                                <TableCell className="px-3 py-2 w-10" onClick={(e) => e.stopPropagation()}>
+                                                    <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(item.key)} />
+                                                </TableCell>
+                                                <TableCell className="px-2 py-2">
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        {isImage(item.key) ? (
+                                                            <div className="size-7 shrink-0 overflow-hidden rounded border bg-muted/50">
+                                                                <img
+                                                                    src={`/api/bucket/${bucketId}/thumbnail?key=${encodeURIComponent(item.key)}`}
+                                                                    alt={name}
+                                                                    loading="lazy"
+                                                                    className="h-full w-full object-cover"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <File className="size-5 shrink-0 text-blue-500" />
+                                                        )}
+                                                        <span className="truncate">{name}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="hidden sm:table-cell text-right text-muted-foreground px-2 py-2 w-36">
+                                                    {item.lastModified ? new Date(item.lastModified).toLocaleString() : '—'}
+                                                </TableCell>
+                                                <TableCell className="text-right text-muted-foreground px-2 py-2 w-24">
+                                                    {item.size !== undefined ? formatSize(item.size) : '—'}
+                                                </TableCell>
+                                                <TableCell className="px-2 py-2 w-10 text-right">
+                                                    <ItemActions
+                                                        bucketId={bucketId}
+                                                        item={item}
+                                                        isFolder={false}
+                                                        refresh={refreshFiles}
+                                                        publicUrlPrefix={publicUrlPrefix}
+                                                        onDelete={(key) => handleBulkDelete([key])}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </TableBody>
+                            </Table>
                         </TooltipProvider>
                     </div>
                 )}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRightLeft, ChevronRight, Folder, CornerLeftUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button"
@@ -66,6 +66,8 @@ export function Move({
     refresh,
     className,
     label,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
 }: {
     bucketId: string;
     itemKey: string;
@@ -73,8 +75,17 @@ export function Move({
     refresh: () => void;
     className?: string;
     label?: string;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [_isOpen, _setIsOpen] = useState(false);
+    const isOpen = controlledOpen !== undefined ? controlledOpen : _isOpen;
+    const setIsOpen = (v: boolean) => {
+        if (controlledOnOpenChange) controlledOnOpenChange(v);
+        else _setIsOpen(v);
+    };
+    const isControlled = controlledOpen !== undefined;
+
     const [browsePath, setBrowsePath] = useState('');
     const [subfolders, setSubfolders] = useState<string[]>([]);
     const [loadingFolders, setLoadingFolders] = useState(false);
@@ -111,6 +122,14 @@ export function Move({
         setIsOpen(true);
         fetchFolders(startPath);
     };
+
+    useEffect(() => {
+        if (isControlled && isOpen) {
+            const startPath = getParentPath(itemKey, isFolder);
+            setBrowsePath(startPath);
+            fetchFolders(startPath);
+        }
+    }, [isControlled, isOpen]);
 
     const moveClicked = async () => {
         if (destinationKey === itemKey) {
@@ -177,7 +196,7 @@ export function Move({
 
     return (
         <>
-            {label ? (
+            {!isControlled && (label ? (
                 <Button variant="outline" className={`gap-2 ${className || ''}`} onClick={openDialog}>
                     <ArrowRightLeft className="size-4" />
                     {label}
@@ -191,7 +210,7 @@ export function Move({
                     </TooltipTrigger>
                     <TooltipContent>Move</TooltipContent>
                 </Tooltip>
-            )}
+            ))}
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-md">

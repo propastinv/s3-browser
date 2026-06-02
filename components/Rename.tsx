@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button"
@@ -55,6 +55,8 @@ export function Rename({
     refresh,
     className,
     label,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
 }: {
     bucketId: string;
     itemKey: string;
@@ -62,8 +64,17 @@ export function Rename({
     refresh: () => void;
     className?: string;
     label?: string;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [_isOpen, _setIsOpen] = useState(false);
+    const isOpen = controlledOpen !== undefined ? controlledOpen : _isOpen;
+    const setIsOpen = (v: boolean) => {
+        if (controlledOnOpenChange) controlledOnOpenChange(v);
+        else _setIsOpen(v);
+    };
+    const isControlled = controlledOpen !== undefined;
+
     const [baseName, setBaseName] = useState("");
     const [isRenaming, setIsRenaming] = useState(false);
 
@@ -71,6 +82,12 @@ export function Rename({
     const { base: originalBase, ext } = isFolder ? { base: originalName, ext: '' } : splitExt(originalName);
 
     const destinationKey = prefix + baseName.trim() + ext + (isFolder ? '/' : '');
+
+    useEffect(() => {
+        if (isControlled && isOpen) {
+            setBaseName(originalBase);
+        }
+    }, [isControlled, isOpen]);
 
     const renameClicked = async () => {
         const trimmed = baseName.trim();
@@ -144,7 +161,7 @@ export function Rename({
 
     return (
         <>
-            {label ? (
+            {!isControlled && (label ? (
                 <Button
                     variant="outline"
                     className={`gap-2 ${className || ''}`}
@@ -167,7 +184,7 @@ export function Rename({
                     </TooltipTrigger>
                     <TooltipContent>Rename</TooltipContent>
                 </Tooltip>
-            )}
+            ))}
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-md">
