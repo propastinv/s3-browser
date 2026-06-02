@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { X, UploadCloud } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,24 @@ export interface UploadProps {
     addTimestamp: boolean;
     className?: string;
     method?: "proxy" | "direct";
+    externalFiles?: File[];
+    onExternalFilesConsumed?: () => void;
 }
 
-export function Upload({ refresh, addTimestamp, className, method = "proxy" }: UploadProps) {
+export function Upload({ refresh, addTimestamp, className, method = "proxy", externalFiles, onExternalFilesConsumed }: UploadProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [progress, setProgress] = useState(0);
     const [uploading, setUploading] = useState(false);
+
+    useEffect(() => {
+        if (externalFiles?.length) {
+            setFiles(externalFiles);
+            setIsOpen(true);
+            onExternalFilesConsumed?.();
+        }
+    }, [externalFiles]);
 
     const pathname = usePathname();
     const parts = pathname.split("/").filter(Boolean);

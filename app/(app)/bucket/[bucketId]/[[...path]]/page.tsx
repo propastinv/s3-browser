@@ -15,6 +15,7 @@ import { New } from "@/components/New"
 import { BulkMove } from "@/components/BulkMove"
 import { ItemActions } from "@/components/ItemActions"
 import { Upload } from "@/components/Upload"
+import { DragDropOverlay } from "@/components/DragDropOverlay"
 import { Refresh } from "@/components/Refresh"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
@@ -66,6 +67,7 @@ export default function BucketPage() {
     const [keysToDelete, setKeysToDelete] = useState<string[]>([])
     const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+    const [droppedFiles, setDroppedFiles] = useState<File[]>([])
 
 
     async function refreshFiles() {
@@ -273,7 +275,7 @@ export default function BucketPage() {
                             ) : (
                                 <>
                                     <New className="bg-blue-600 text-white hover:bg-blue-700 flex-1 sm:flex-initial" />
-                                    <Upload refresh={refreshFiles} addTimestamp={addTimestamp} className="bg-green-600 text-white hover:bg-green-700 flex-1 sm:flex-initial" method={uploadMethod} />
+                                    <Upload refresh={refreshFiles} addTimestamp={addTimestamp} className="bg-green-600 text-white hover:bg-green-700 flex-1 sm:flex-initial" method={uploadMethod} externalFiles={droppedFiles} onExternalFilesConsumed={() => setDroppedFiles([])} />
                                     <Refresh refresh={refreshFiles} className="shrink-0" />
                                 </>
                             )}
@@ -430,6 +432,8 @@ export default function BucketPage() {
                 refresh={refreshFiles}
                 publicUrlPrefix={publicUrlPrefix}
             />
+
+            <DragDropOverlay onDrop={setDroppedFiles} />
 
             <ConfirmDialog
                 open={confirmOpen}
