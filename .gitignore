@@ -43,3 +43,5 @@ next-env.d.ts
 buckets.yaml
 generated
 prisma/migrations
+
+.claude-flow

@@ -1,7 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Database } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 
 interface Bucket {
     id: string
@@ -12,6 +24,7 @@ interface Bucket {
 }
 
 export default function BucketsPage() {
+    const router = useRouter()
     const [buckets, setBuckets] = useState<Bucket[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -31,80 +44,95 @@ export default function BucketsPage() {
     }, [])
 
     return (
-        <div className="">
-            <div className="px-4 lg:gap-2 lg:px-6 py-6">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-                        Buckets
-                    </h1>
-                    <p className="text-slate-600 dark:text-slate-400">
-                        {buckets.length === 0
-                            ? "No buckets configured yet"
-                            : `${buckets.length} bucket${buckets.length > 1 ? "s" : ""}`}
-                    </p>
-                </div>
-
-                {loading ? (
-                    <div className="max-w-7xl mx-auto space-y-4">
-                        {[...Array(3)].map((_, i) => (
-                            <div
-                                key={i}
-                                className="h-14 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
-                            />
-                        ))}
-                    </div>
-                ) : buckets.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center">
-                        <p className="text-slate-600 dark:text-slate-400">
-                            No buckets found
-                        </p>
-                    </div>
-                ) : (
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-                        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-50 dark:bg-slate-900 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            <div className="col-span-4">Bucket</div>
-                            <div className="col-span-2">Provider</div>
-                            <div className="col-span-3">Region</div>
-                            <div className="col-span-3">Endpoint</div>
-                        </div>
-
-                        <div className="divide-y divide-slate-200 dark:divide-slate-800">
-                            {buckets.map((bucket) => (
-                                <Link
-                                    key={bucket.id}
-                                    href={`/bucket/${bucket.id}`}
-                                    className="block hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-                                >
-                                    <div className="grid grid-cols-12 gap-4 px-4 py-4 items-center">
-                                        <div className="col-span-4 min-w-0">
-                                            <p className="font-medium text-slate-900 dark:text-slate-50 truncate">
-                                                {bucket.bucket}
-                                            </p>
-                                            <p className="text-xs text-slate-500 font-mono truncate">
-                                                {bucket.id}
-                                            </p>
-                                        </div>
-
-                                        <div className="col-span-2">
-                                            <span className="inline-flex rounded-md bg-blue-50 dark:bg-blue-950 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
-                                                {bucket.provider}
-                                            </span>
-                                        </div>
-
-                                        <div className="col-span-3 text-sm text-slate-600 dark:text-slate-400 truncate">
-                                            {bucket.region}
-                                        </div>
-
-                                        <div className="col-span-3 text-sm text-slate-600 dark:text-slate-400 truncate">
-                                            {bucket.endpoint}
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                )}
+        <div className="px-4 lg:px-6 py-6 flex flex-col gap-6">
+            <div>
+                <h1 className="text-2xl font-semibold tracking-tight">Buckets</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                    {loading
+                        ? "Loading..."
+                        : buckets.length === 0
+                            ? "No buckets configured"
+                            : `${buckets.length} bucket${buckets.length > 1 ? "s" : ""} configured`}
+                </p>
             </div>
+
+            {loading ? (
+                <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Bucket</TableHead>
+                                <TableHead>Provider</TableHead>
+                                <TableHead>Region</TableHead>
+                                <TableHead>Endpoint</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {[...Array(4)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell>
+                                        <div className="flex flex-col gap-1.5">
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-3 w-24" />
+                                        </div>
+                                    </TableCell>
+                                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            ) : buckets.length === 0 ? (
+                <Empty className="border">
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <Database />
+                        </EmptyMedia>
+                        <EmptyTitle>No buckets</EmptyTitle>
+                        <EmptyDescription>No buckets have been configured yet.</EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
+            ) : (
+                <div className="rounded-lg border overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Bucket</TableHead>
+                                <TableHead>Provider</TableHead>
+                                <TableHead>Region</TableHead>
+                                <TableHead className="hidden md:table-cell">Endpoint</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {buckets.map((bucket) => (
+                                <TableRow
+                                    key={bucket.id}
+                                    className="cursor-pointer"
+                                    onClick={() => router.push(`/bucket/${encodeURIComponent(bucket.id)}`)}
+                                >
+                                    <TableCell>
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="font-medium">{bucket.bucket}</span>
+                                            <span className="text-xs text-muted-foreground font-mono">{bucket.id}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="secondary">{bucket.provider}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                        {bucket.region || "—"}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground font-mono text-xs hidden md:table-cell max-w-xs truncate">
+                                        {bucket.endpoint || "—"}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
         </div>
     )
 }

@@ -19,9 +19,13 @@ import {
     DrawerFooter,
     DrawerDescription
 } from "@/components/ui/drawer"
-import { ClipboardCopy } from 'lucide-react';
+import { ClipboardCopy, Download, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button"
 import { handleCopyPath } from "@/lib/copy"
+import { Move } from "@/components/Move"
+import { Rename } from "@/components/Rename"
+import { ConfirmDialog } from "@/components/ConfirmDialog"
+import { toast } from "sonner"
 
 export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: DrawerProps) {
     const pathname = usePathname()
@@ -40,6 +44,8 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
     const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
         if (!file || !isImage) {
@@ -67,30 +73,25 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
 
     const handleDelete = async () => {
         if (!file) return
-
-        const confirmed = window.confirm(
-            `Are you sure you want to delete "${file.key}"?`
-        )
-        if (!confirmed) return
-
+        setIsDeleting(true)
         try {
             const res = await fetch(`/api/bucket/${bucketId}`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ fileKey: file.key }),
             })
-
             const data = await res.json()
-
             if (!res.ok) {
-                alert(`Error deleting file: ${data.error}`)
+                toast.error(data.error || "Failed to delete file")
             } else {
+                setConfirmOpen(false)
                 onClose()
                 await refresh()
             }
         } catch (err) {
-            console.error(err)
-            alert("Failed to delete file")
+            toast.error("Failed to delete file")
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -117,6 +118,7 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
 
 
     return (
+        <>
         <Drawer
             open={isOpen}
             onOpenChange={(open) => {
@@ -220,17 +222,46 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
                 </div>
 
                 <DrawerFooter className="mt-auto">
-                    <Button onClick={handleDownload}>
+                    <Button onClick={handleDownload} className="gap-2">
+                        <Download className="size-4" />
                         Download
                     </Button>
-                    <Button variant="destructive" onClick={handleDelete}>
+                    {file && (
+                        <div className="grid grid-cols-2 gap-2">
+                            <Move
+                                bucketId={bucketId}
+                                itemKey={file.key}
+                                isFolder={false}
+                                refresh={() => { onClose(); refresh(); }}
+                                label="Move"
+                                className="w-full"
+                            />
+                            <Rename
+                                bucketId={bucketId}
+                                itemKey={file.key}
+                                isFolder={false}
+                                refresh={() => { onClose(); refresh(); }}
+                                label="Rename"
+                                className="w-full"
+                            />
+                        </div>
+                    )}
+                    <Button variant="destructive" onClick={() => setConfirmOpen(true)} className="gap-2">
+                        <Trash2 className="size-4" />
                         Delete
                     </Button>
-                    {/* <DrawerClose asChild>
-                        <Button variant="outline">Close</Button>
-                    </DrawerClose> */}
                 </DrawerFooter>
             </DrawerContent>
         </Drawer>
+
+        <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            onConfirm={handleDelete}
+            title="Delete file"
+            description={`Are you sure you want to delete "${file?.key}"? This action cannot be undone.`}
+            loading={isDeleting}
+        />
+        </>
     )
 }

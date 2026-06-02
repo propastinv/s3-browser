@@ -2,8 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Folder, File, Search, FolderOpen, Trash2, Copy, ArrowUpDown, SortAsc, SortDesc, Clock, HardDrive, Type } from "lucide-react"
+import { Folder, File, Search, FolderOpen, Trash2, Copy, SortAsc, SortDesc, Clock, HardDrive, Type } from "lucide-react"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Button } from "@/components/ui/button"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
@@ -13,6 +12,9 @@ import { FileDrawer } from "@/components/Drawer"
 import { formatSize } from "@/lib/formatters"
 import { BucketObject } from "@/types/bucket"
 import { New } from "@/components/New"
+import { Move } from "@/components/Move"
+import { Rename } from "@/components/Rename"
+import { BulkMove } from "@/components/BulkMove"
 import { Upload } from "@/components/Upload"
 import { Refresh } from "@/components/Refresh"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -24,6 +26,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { handleCopyPath } from "@/lib/copy"
+import { ConfirmDialog } from "@/components/ConfirmDialog"
 import {
     Select,
     SelectContent,
@@ -31,6 +34,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+
+const isImage = (key: string) => /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(key)
 
 
 export default function BucketPage() {
@@ -50,6 +55,8 @@ export default function BucketPage() {
     const [selectedFile, setSelectedFile] = useState<BucketObject | undefined>(undefined)
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
     const [isDeleting, setIsDeleting] = useState(false)
+    const [confirmOpen, setConfirmOpen] = useState(false)
+    const [keysToDelete, setKeysToDelete] = useState<string[]>([])
     const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
@@ -134,22 +141,25 @@ export default function BucketPage() {
         }
     }
 
-    const handleBulkDelete = async (keys?: string[]) => {
+    const handleBulkDelete = (keys?: string[]) => {
         const targetKeys = keys || Array.from(selectedKeys)
         if (targetKeys.length === 0) return
-        const isSingle = targetKeys.length === 1
-        if (!confirm(`Are you sure you want to delete ${isSingle ? `"${targetKeys[0].replace(prefix, "")}"` : `${targetKeys.length} items`}?`)) return
+        setKeysToDelete(targetKeys)
+        setConfirmOpen(true)
+    }
 
+    const performDelete = async () => {
+        if (keysToDelete.length === 0) return
         setIsDeleting(true)
         try {
             const res = await fetch(`/api/bucket/${bucketId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileKeys: targetKeys })
+                body: JSON.stringify({ fileKeys: keysToDelete })
             })
-
             if (res.ok) {
-                toast.success(`${targetKeys.length} ${targetKeys.length === 1 ? 'item' : 'items'} deleted`)
+                toast.success(`${keysToDelete.length} ${keysToDelete.length === 1 ? 'item' : 'items'} deleted`)
+                setConfirmOpen(false)
                 refreshFiles()
             } else {
                 const data = await res.json()
@@ -235,6 +245,14 @@ export default function BucketPage() {
 
                             {selectedKeys.size > 0 ? (
                                 <>
+                                    <BulkMove
+                                        bucketId={bucketId}
+                                        selectedKeys={Array.from(selectedKeys)}
+                                        refresh={() => {
+                                            setSelectedKeys(new Set());
+                                            refreshFiles();
+                                        }}
+                                    />
                                     <Button
                                         variant="destructive"
                                         onClick={() => handleBulkDelete()}
@@ -334,18 +352,15 @@ export default function BucketPage() {
                                             />
                                         </div>
                                         <div className="flex flex-1 items-center gap-2.5 min-w-0">
-                                            <Folder className="size-4 shrink-0 text-amber-300" fill="currentColor" />
+                                            <div className="size-8 shrink-0 flex items-center justify-center">
+                                                <Folder className="size-5 text-amber-300" fill="currentColor" />
+                                            </div>
                                             <span className="min-w-0 flex-1 truncate">{name}</span>
                                         </div>
 
-                                        <span className="w-[120px] text-sm text-muted-foreground text-right shrink-0 hidden sm:block">
-                                            {item.lastModified ? new Date(item.lastModified).toLocaleDateString() : '—'}
-                                        </span>
-                                        <span className="w-[80px] text-sm text-muted-foreground text-right shrink-0">
-                                            —
-                                        </span>
-
-                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-[72px] justify-end shrink-0">
+                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-35 justify-end shrink-0">
+                                            <Move bucketId={bucketId} itemKey={item.key} isFolder={true} refresh={refreshFiles} />
+                                            <Rename bucketId={bucketId} itemKey={item.key} isFolder={true} refresh={refreshFiles} />
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onCopyPath(item)}>
@@ -363,6 +378,13 @@ export default function BucketPage() {
                                                 <TooltipContent>Delete folder</TooltipContent>
                                             </Tooltip>
                                         </div>
+
+                                        <span className="w-[120px] text-sm text-muted-foreground text-right shrink-0 hidden sm:block">
+                                            {item.lastModified ? new Date(item.lastModified).toLocaleDateString() : '—'}
+                                        </span>
+                                        <span className="w-[80px] text-sm text-muted-foreground text-right shrink-0">
+                                            —
+                                        </span>
                                     </div>
                                 )
                             })}
@@ -385,11 +407,26 @@ export default function BucketPage() {
                                             />
                                         </div>
                                         <div className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
-                                            <File className="size-4 shrink-0 text-blue-500" />
+                                            {isImage(item.key) ? (
+                                                <div className="size-8 shrink-0 overflow-hidden rounded bg-muted/50 border flex items-center justify-center">
+                                                    <img
+                                                        src={`/api/bucket/${bucketId}/thumbnail?key=${encodeURIComponent(item.key)}`}
+                                                        alt={name}
+                                                        loading="lazy"
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="size-8 shrink-0 flex items-center justify-center">
+                                                    <File className="size-5 text-blue-500" />
+                                                </div>
+                                            )}
                                             <span className="min-w-0 truncate">{name}</span>
                                         </div>
 
-                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-[72px] justify-end shrink-0">
+                                        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-35 justify-end shrink-0">
+                                            <Move bucketId={bucketId} itemKey={item.key} isFolder={false} refresh={refreshFiles} />
+                                            <Rename bucketId={bucketId} itemKey={item.key} isFolder={false} refresh={refreshFiles} />
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onCopyPath(item)}>
@@ -408,7 +445,7 @@ export default function BucketPage() {
                                             </Tooltip>
                                         </div>
 
-                                        <span className="w-[150px] text-sm text-muted-foreground text-right shrink-0 hidden sm:block">
+                                        <span className="w-[200px] text-sm text-muted-foreground text-right shrink-0 hidden sm:block">
                                             {item.lastModified ? new Date(item.lastModified).toLocaleString() : '—'}
                                         </span>
                                         <span className="w-[80px] text-sm text-muted-foreground text-right shrink-0">
@@ -428,6 +465,17 @@ export default function BucketPage() {
                 file={selectedFile}
                 refresh={refreshFiles}
                 publicUrlPrefix={publicUrlPrefix}
+            />
+
+            <ConfirmDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                onConfirm={performDelete}
+                title={keysToDelete.length === 1
+                    ? `Delete "${keysToDelete[0].replace(prefix, "")}"`
+                    : `Delete ${keysToDelete.length} items`}
+                description="This action cannot be undone."
+                loading={isDeleting}
             />
         </div>
     )
