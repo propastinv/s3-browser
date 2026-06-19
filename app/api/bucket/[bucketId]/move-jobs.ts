@@ -1,3 +1,5 @@
+const JOB_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
 export interface MoveJob {
     id: string;
     status: 'running' | 'completed' | 'error';
@@ -5,16 +7,28 @@ export interface MoveJob {
     totalItems: number;
     processedItems: number;
     error?: string;
+    finishedAt?: number;
 }
 
 const globalForJobs = global as unknown as { moveJobs: Map<string, MoveJob> };
-export const moveJobs = globalForJobs.moveJobs || new Map<string, MoveJob>();
 
-if (process.env.NODE_ENV !== "production") {
-    globalForJobs.moveJobs = moveJobs;
+if (!globalForJobs.moveJobs) {
+    globalForJobs.moveJobs = new Map();
+}
+
+export const moveJobs = globalForJobs.moveJobs;
+
+function evictExpiredJobs() {
+    const cutoff = Date.now() - JOB_TTL_MS;
+    for (const [id, job] of moveJobs) {
+        if (job.finishedAt !== undefined && job.finishedAt < cutoff) {
+            moveJobs.delete(id);
+        }
+    }
 }
 
 export function createMoveJob(id: string): MoveJob {
+    evictExpiredJobs();
     const job: MoveJob = {
         id,
         status: 'running',
@@ -32,7 +46,9 @@ export function getMoveJob(id: string): MoveJob | undefined {
 
 export function updateMoveJob(id: string, updates: Partial<MoveJob>) {
     const job = moveJobs.get(id);
-    if (job) {
-        Object.assign(job, updates);
+    if (!job) return;
+    Object.assign(job, updates);
+    if (updates.status === 'completed' || updates.status === 'error') {
+        job.finishedAt = Date.now();
     }
 }

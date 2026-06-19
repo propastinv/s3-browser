@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3"
+import { GetObjectCommand } from "@aws-sdk/client-s3"
+import { getS3Client } from '@/lib/s3-client';
 import { getBucketById } from "@/lib/buckets";
 import { getToken } from 'next-auth/jwt';
 
@@ -28,15 +29,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ bucketI
     }
 
     try {
-        const client = new S3Client({
-            region: bucket.region,
-            endpoint: bucket.endpoint,
-            forcePathStyle: bucket.forcePathStyle ?? false,
-            credentials: {
-                accessKeyId: bucket.accessKeyId,
-                secretAccessKey: bucket.secretAccessKey,
-            },
-        });
+        const client = getS3Client(bucket);
 
         const result = await client.send(
             new GetObjectCommand({

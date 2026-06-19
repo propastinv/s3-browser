@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowRightLeft, ChevronRight, Folder, CornerLeftUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button"
@@ -90,6 +90,13 @@ export function Move({
     const [subfolders, setSubfolders] = useState<string[]>([]);
     const [loadingFolders, setLoadingFolders] = useState(false);
     const [isMoving, setIsMoving] = useState(false);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
+    }, []);
 
     const fileName = getFileName(itemKey, isFolder);
     const destinationKey = browsePath + fileName + (isFolder ? '/' : '');
@@ -148,18 +155,20 @@ export function Move({
 
             if (res.ok && data.jobId) {
                 setIsOpen(false);
-                const poll = setInterval(async () => {
+                pollRef.current = setInterval(async () => {
                     try {
                         const statusRes = await fetch(`/api/bucket/${bucketId}/move/status?jobId=${data.jobId}`);
                         if (!statusRes.ok) return;
                         const job = await statusRes.json();
                         if (job.status === 'completed') {
-                            clearInterval(poll);
+                            clearInterval(pollRef.current!);
+                            pollRef.current = null;
                             toast.success(`Moved ${fileName} successfully`, { id: toastId, description: '100% completed' });
                             refresh();
                             setIsMoving(false);
                         } else if (job.status === 'error') {
-                            clearInterval(poll);
+                            clearInterval(pollRef.current!);
+                            pollRef.current = null;
                             toast.error(`Failed to move: ${job.error}`, { id: toastId });
                             setIsMoving(false);
                         } else {

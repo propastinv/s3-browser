@@ -3,10 +3,10 @@ import { getToken } from 'next-auth/jwt';
 import { getBucketById } from '@/lib/buckets';
 import { prisma } from '@/lib/prisma';
 import {
-    S3Client,
     ListObjectsV2Command,
     DeleteObjectsCommand
 } from '@aws-sdk/client-s3';
+import { getS3Client } from '@/lib/s3-client';
 
 export async function GET(
     req: NextRequest,
@@ -29,15 +29,7 @@ export async function GET(
         return NextResponse.json({ error: 'Bucket not found' }, { status: 404 });
     }
 
-    const client = new S3Client({
-        region: bucket.region,
-        endpoint: bucket.endpoint,
-        forcePathStyle: bucket.forcePathStyle ?? false,
-        credentials: {
-            accessKeyId: bucket.accessKeyId,
-            secretAccessKey: bucket.secretAccessKey,
-        },
-    });
+    const client = getS3Client(bucket);
 
     const url = new URL(req.url);
     const prefix = url.searchParams.get('prefix') || '';
@@ -107,15 +99,7 @@ export async function DELETE(
         return NextResponse.json({ error: 'No files specified' }, { status: 400 });
     }
 
-    const client = new S3Client({
-        region: bucket.region,
-        endpoint: bucket.endpoint,
-        forcePathStyle: bucket.forcePathStyle ?? false,
-        credentials: {
-            accessKeyId: bucket.accessKeyId,
-            secretAccessKey: bucket.secretAccessKey,
-        },
-    });
+    const client = getS3Client(bucket);
 
     try {
         const finalKeysToDelete = new Set<string>();
@@ -189,12 +173,17 @@ export async function DELETE(
     }
 }
 
+const syncInFlight = new Set<string>();
+
 async function syncFolderIndex(
     bucketId: string,
     group: string,
     prefix: string,
     foundDetails: { key: string }[]
 ) {
+    const key = `${bucketId}:${prefix}`;
+    if (syncInFlight.has(key)) return;
+    syncInFlight.add(key);
     try {
         const foundKeys = foundDetails.map(f => f.key);
 
@@ -238,5 +227,7 @@ async function syncFolderIndex(
 
     } catch (error) {
         console.error('Failed to sync S3 index:', error);
+    } finally {
+        syncInFlight.delete(key);
     }
 }

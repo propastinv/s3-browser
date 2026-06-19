@@ -40,6 +40,14 @@ jobs:
       if: env.SKIP == 'true'
       run: echo "No changes in version. Skipping build."
 
+    - name: Set env for image
+      if: env.SKIP != 'true'
+      run: |
+        > .env
+        echo "NEXT_PUBLIC_SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
+        echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
+
+
     - name: Log in to GitHub Container Registry
       if: env.SKIP != 'true'
       uses: docker/login-action@v4

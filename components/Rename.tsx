@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button"
@@ -77,6 +77,13 @@ export function Rename({
 
     const [baseName, setBaseName] = useState("");
     const [isRenaming, setIsRenaming] = useState(false);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
+    }, []);
 
     const { prefix, name: originalName } = splitKey(itemKey, isFolder);
     const { base: originalBase, ext } = isFolder ? { base: originalName, ext: '' } : splitExt(originalName);
@@ -114,19 +121,21 @@ export function Rename({
             if (res.ok && data.jobId) {
                 setIsOpen(false);
 
-                const poll = setInterval(async () => {
+                pollRef.current = setInterval(async () => {
                     try {
                         const statusRes = await fetch(`/api/bucket/${bucketId}/move/status?jobId=${data.jobId}`);
                         if (statusRes.ok) {
                             const job = await statusRes.json();
 
                             if (job.status === 'completed') {
-                                clearInterval(poll);
+                                clearInterval(pollRef.current!);
+                                pollRef.current = null;
                                 toast.success(`Renamed to ${trimmed} successfully`, { id: toastId });
                                 refresh();
                                 setIsRenaming(false);
                             } else if (job.status === 'error') {
-                                clearInterval(poll);
+                                clearInterval(pollRef.current!);
+                                pollRef.current = null;
                                 toast.error(`Failed to rename: ${job.error}`, { id: toastId });
                                 setIsRenaming(false);
                             } else {

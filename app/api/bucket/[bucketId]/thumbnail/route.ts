@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBucketById } from "@/lib/buckets";
 import { getToken } from 'next-auth/jwt';
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getS3Client } from '@/lib/s3-client';
 import sharp from "sharp";
 import { Readable } from "stream";
 
@@ -28,15 +29,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ bucketI
         return NextResponse.json({ error: "Missing file key" }, { status: 400 });
     }
 
-    const client = new S3Client({
-        region: bucket.region,
-        endpoint: bucket.endpoint,
-        forcePathStyle: bucket.forcePathStyle ?? false,
-        credentials: {
-            accessKeyId: bucket.accessKeyId,
-            secretAccessKey: bucket.secretAccessKey,
-        },
-    });
+    const client = getS3Client(bucket);
 
     try {
         const command = new GetObjectCommand({ Bucket: bucket.bucket, Key: key });

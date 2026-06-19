@@ -3,11 +3,11 @@ import { getToken } from 'next-auth/jwt';
 import { getBucketById } from '@/lib/buckets';
 import { prisma } from '@/lib/prisma';
 import {
-    S3Client,
     ListObjectsV2Command,
     CopyObjectCommand,
     DeleteObjectsCommand
 } from '@aws-sdk/client-s3';
+import { getS3Client } from '@/lib/s3-client';
 import { createMoveJob, updateMoveJob } from '../move-jobs';
 import crypto from 'crypto';
 
@@ -72,15 +72,7 @@ export async function POST(
         }
     }
 
-    const client = new S3Client({
-        region: bucket.region,
-        endpoint: bucket.endpoint,
-        forcePathStyle: bucket.forcePathStyle ?? false,
-        credentials: {
-            accessKeyId: bucket.accessKeyId,
-            secretAccessKey: bucket.secretAccessKey,
-        },
-    });
+    const client = getS3Client(bucket);
 
     const jobId = crypto.randomUUID();
     createMoveJob(jobId);
