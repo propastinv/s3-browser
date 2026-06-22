@@ -35,10 +35,14 @@ export async function GET(
     const prefix = url.searchParams.get('prefix') || '';
 
     try {
+        const continuationToken = url.searchParams.get('continuationToken') || undefined;
+
         const command = new ListObjectsV2Command({
             Bucket: bucket.bucket,
             Prefix: prefix,
             Delimiter: '/',
+            MaxKeys: 1000,
+            ContinuationToken: continuationToken,
         });
 
         const data = await client.send(command);
@@ -59,6 +63,8 @@ export async function GET(
             .catch(err => console.error('Background sync failed:', err));
         return NextResponse.json({
             items: [...folders, ...files],
+            nextContinuationToken: data.NextContinuationToken,
+            isTruncated: data.IsTruncated ?? false,
             uploadMethod: bucket.uploadMethod || "proxy",
             publicUrlPrefix: bucket.publicUrlPrefix,
             addTimestamp: bucket.addTimestamp ?? false,
@@ -140,31 +146,33 @@ export async function DELETE(
             }));
         }
 
-        for (const key of keysToDelete) {
-            await prisma.s3FileActionLog.create({
-                data: {
-                    action: 'DELETE',
-                    bucket: bucket.id,
-                    key: key,
-                    group: bucket.group,
-                    userName: token.name || token.email || 'Unknown',
+        if (prisma) {
+            for (const key of keysToDelete) {
+                await prisma.s3FileActionLog.create({
+                    data: {
+                        action: 'DELETE',
+                        bucket: bucket.id,
+                        key: key,
+                        group: bucket.group,
+                        userName: token.name || token.email || 'Unknown',
+                    }
+                }).catch(e => console.error('Failed to log delete action:', e));
+            }
+
+            const orConditions = keysToDelete.map(key => {
+                if (key.endsWith('/')) {
+                    return { key: { startsWith: key } };
                 }
-            }).catch(e => console.error('Failed to log delete action:', e));
+                return { key };
+            });
+
+            await prisma.s3FileIndex.deleteMany({
+                where: {
+                    bucket: bucket.id,
+                    OR: orConditions,
+                }
+            }).catch(e => console.error('Failed to delete from index:', e));
         }
-
-        const orConditions = keysToDelete.map(key => {
-            if (key.endsWith('/')) {
-                return { key: { startsWith: key } };
-            }
-            return { key };
-        });
-
-        await prisma.s3FileIndex.deleteMany({
-            where: {
-                bucket: bucket.id,
-                OR: orConditions,
-            }
-        }).catch(e => console.error('Failed to delete from index:', e));
 
         return NextResponse.json({ success: true });
     } catch (err: any) {
@@ -174,6 +182,8 @@ export async function DELETE(
 }
 
 const syncInFlight = new Set<string>();
+const syncLastRun = new Map<string, number>();
+const SYNC_INTERVAL_MS = 60_000;
 
 async function syncFolderIndex(
     bucketId: string,
@@ -182,7 +192,10 @@ async function syncFolderIndex(
     foundDetails: { key: string }[]
 ) {
     const key = `${bucketId}:${prefix}`;
+    if (!process.env.DATABASE_URL || !prisma) return;
     if (syncInFlight.has(key)) return;
+    if (Date.now() - (syncLastRun.get(key) ?? 0) < SYNC_INTERVAL_MS) return;
+    syncLastRun.set(key, Date.now());
     syncInFlight.add(key);
     try {
         const foundKeys = foundDetails.map(f => f.key);
@@ -225,8 +238,8 @@ async function syncFolderIndex(
             });
         }
 
-    } catch (error) {
-        console.error('Failed to sync S3 index:', error);
+    } catch {
+        // Sync is optional — silently skip on DB errors
     } finally {
         syncInFlight.delete(key);
     }

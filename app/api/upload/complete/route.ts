@@ -35,15 +35,17 @@ export async function POST(req: NextRequest) {
         })
     );
 
-    await prisma.s3FileActionLog.create({
-        data: {
-            action: 'UPLOAD',
-            bucket: bucket.id,
-            key: key,
-            group: bucket.group,
-            userName: token.name || token.email || 'Unknown',
-        }
-    }).catch(e => console.error('Failed to log upload action:', e));
+    if (prisma) {
+        await prisma.s3FileActionLog.create({
+            data: {
+                action: 'UPLOAD',
+                bucket: bucket.id,
+                key: key,
+                group: bucket.group,
+                userName: token.name || token.email || 'Unknown',
+            }
+        }).catch(e => console.error('Failed to log upload action:', e));
+    }
 
     return NextResponse.json({ success: true });
 }

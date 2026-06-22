@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Folder, File, Search, FolderOpen, Trash2, SortAsc, SortDesc, Clock, HardDrive, Type, Copy, Check } from "lucide-react"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Button } from "@/components/ui/button"
@@ -69,6 +69,7 @@ export default function BucketPage() {
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
     const [droppedFiles, setDroppedFiles] = useState<File[]>([])
     const [copiedKey, setCopiedKey] = useState<string | null>(null)
+    const fetchSessionRef = useRef(0)
 
     const copyWithFeedback = (item: BucketObject) => {
         handleCopyPath(item, publicUrlPrefix, () => {
@@ -80,6 +81,7 @@ export default function BucketPage() {
 
 
     async function refreshFiles() {
+        const sessionId = ++fetchSessionRef.current
         setLoading(true)
         setSelectedKeys(new Set())
         const res = await fetch(`/api/bucket/${bucketId}?prefix=${encodeURIComponent(prefix)}`)
@@ -89,6 +91,21 @@ export default function BucketPage() {
         setPublicUrlPrefix(data.publicUrlPrefix)
         setAddTimestamp(data.addTimestamp || false)
         setLoading(false)
+        if (data.isTruncated && data.nextContinuationToken) {
+            fetchRemainingPages(data.nextContinuationToken, sessionId)
+        }
+    }
+
+    async function fetchRemainingPages(initialToken: string, sessionId: number) {
+        let token: string | undefined = initialToken
+        while (token && fetchSessionRef.current === sessionId) {
+            const url = `/api/bucket/${bucketId}?prefix=${encodeURIComponent(prefix)}&continuationToken=${encodeURIComponent(token)}`
+            const res = await fetch(url)
+            const data: { items?: BucketObject[], isTruncated?: boolean, nextContinuationToken?: string } = await res.json()
+            if (fetchSessionRef.current !== sessionId) break
+            setItems(prev => [...prev, ...(data.items || [])])
+            token = data.isTruncated ? data.nextContinuationToken : undefined
+        }
     }
 
     useEffect(() => {
@@ -464,6 +481,7 @@ export default function BucketPage() {
                         </TooltipProvider>
                     </div>
                 )}
+
             </div>
 
             <FileDrawer

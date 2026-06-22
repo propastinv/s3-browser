@@ -31,6 +31,15 @@ export default async function UsersPage() {
         )
     }
 
+    if (!prisma) {
+        return (
+            <div className="flex-1 p-8 pt-6">
+                <h2 className="text-3xl font-bold tracking-tight">Users</h2>
+                <p className="text-muted-foreground">Database is not configured.</p>
+            </div>
+        )
+    }
+
     const users = await prisma.user.findMany({
         orderBy: {
             createdAt: "desc",

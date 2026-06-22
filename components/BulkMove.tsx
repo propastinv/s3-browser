@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { ArrowRightLeft, ChevronRight, Folder, CornerLeftUp } from "lucide-react";
 import {
     Breadcrumb,
@@ -198,9 +198,9 @@ export function BulkMove({
                                 )}
                             </BreadcrumbItem>
                             {segments.map((seg, i) => (
-                                <>
-                                    <BreadcrumbSeparator key={`sep-${seg.path}`} />
-                                    <BreadcrumbItem key={seg.path}>
+                                <Fragment key={seg.path}>
+                                    <BreadcrumbSeparator />
+                                    <BreadcrumbItem>
                                         {i === segments.length - 1 ? (
                                             <BreadcrumbPage>{seg.label}</BreadcrumbPage>
                                         ) : (
@@ -209,7 +209,7 @@ export function BulkMove({
                                             </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>
-                                </>
+                                </Fragment>
                             ))}
                         </BreadcrumbList>
                     </Breadcrumb>

@@ -18,7 +18,7 @@ export const authOptions: AuthOptions = {
         return profile;
       },
     }),
-    ...(process.env.ENABLE_LOCAL_AUTH !== "false"
+    ...(process.env.ENABLE_LOCAL_AUTH !== "false" && !!process.env.DATABASE_URL
       ? [
         CredentialsProvider({
           name: "Credentials",

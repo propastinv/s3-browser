@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
 export async function bootstrapAdmin() {
+  if (!prisma) return;
   try {
     const adminUser = await prisma.user.findUnique({
       where: { username: "admin" },

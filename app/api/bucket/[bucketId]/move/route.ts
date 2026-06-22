@@ -121,21 +121,23 @@ export async function POST(
                 return;
             }
 
-            // Second pass: perform copy
+            // Second pass: perform copy in parallel batches
             let processedItems = 0;
-            for (const item of itemsToProcess) {
-                await client.send(new CopyObjectCommand({
-                    Bucket: bucket.bucket,
-                    CopySource: `${bucket.bucket}/${item.oldKey}`,
-                    Key: item.newKey,
+            const COPY_CONCURRENCY = 15;
+            for (let i = 0; i < itemsToProcess.length; i += COPY_CONCURRENCY) {
+                const batch = itemsToProcess.slice(i, i + COPY_CONCURRENCY);
+                await Promise.all(batch.map(async (item) => {
+                    await client.send(new CopyObjectCommand({
+                        Bucket: bucket.bucket,
+                        CopySource: `${bucket.bucket}/${item.oldKey}`,
+                        Key: item.newKey,
+                    }));
+                    finalKeysToDelete.add(item.oldKey);
+                    newKeysToAdd.add(item.newKey);
+                    processedItems++;
+                    const progress = Math.round((processedItems / totalItems) * 50);
+                    updateMoveJob(jobId, { processedItems, progress });
                 }));
-                finalKeysToDelete.add(item.oldKey);
-                newKeysToAdd.add(item.newKey);
-                
-                processedItems++;
-                // Progress reaches 50% max for copy phase
-                const progress = Math.round((processedItems / totalItems) * 50);
-                updateMoveJob(jobId, { processedItems, progress });
             }
 
             const allKeysToDelete = Array.from(finalKeysToDelete);
@@ -159,41 +161,43 @@ export async function POST(
                 }
             }
 
-            // Log actions
-            await prisma.s3FileActionLog.createMany({
-                data: moveItems.map(item => ({
-                    action: 'MOVE',
-                    bucket: bucket.id,
-                    key: item.sourceKey,
-                    group: bucket.group,
-                    userName: token.name || token.email || 'Unknown',
-                }))
-            }).catch(e => console.error('Failed to log move actions:', e));
-
-            // Update S3FileIndex: delete old
-            const orConditions = moveItems.map(item => 
-                item.isFolder ? { key: { startsWith: item.sourceKey } } : { key: item.sourceKey }
-            );
-
-            if (orConditions.length > 0) {
-                await prisma.s3FileIndex.deleteMany({
-                    where: {
+            if (prisma) {
+                // Log actions
+                await prisma.s3FileActionLog.createMany({
+                    data: moveItems.map(item => ({
+                        action: 'MOVE',
                         bucket: bucket.id,
-                        OR: orConditions,
-                    }
-                }).catch(e => console.error('Failed to delete old keys from index:', e));
-            }
-
-            // Update S3FileIndex: insert new
-            if (newKeysToAdd.size > 0) {
-                await prisma.s3FileIndex.createMany({
-                    data: Array.from(newKeysToAdd).map(key => ({
-                        bucket: bucket.id,
+                        key: item.sourceKey,
                         group: bucket.group,
-                        key,
-                    })),
-                    skipDuplicates: true,
-                }).catch(e => console.error('Failed to add new keys to index:', e));
+                        userName: token.name || token.email || 'Unknown',
+                    }))
+                }).catch(e => console.error('Failed to log move actions:', e));
+
+                // Update S3FileIndex: delete old
+                const orConditions = moveItems.map(item =>
+                    item.isFolder ? { key: { startsWith: item.sourceKey } } : { key: item.sourceKey }
+                );
+
+                if (orConditions.length > 0) {
+                    await prisma.s3FileIndex.deleteMany({
+                        where: {
+                            bucket: bucket.id,
+                            OR: orConditions,
+                        }
+                    }).catch(e => console.error('Failed to delete old keys from index:', e));
+                }
+
+                // Update S3FileIndex: insert new
+                if (newKeysToAdd.size > 0) {
+                    await prisma.s3FileIndex.createMany({
+                        data: Array.from(newKeysToAdd).map(key => ({
+                            bucket: bucket.id,
+                            group: bucket.group,
+                            key,
+                        })),
+                        skipDuplicates: true,
+                    }).catch(e => console.error('Failed to add new keys to index:', e));
+                }
             }
 
             updateMoveJob(jobId, { status: 'completed', progress: 100 });
