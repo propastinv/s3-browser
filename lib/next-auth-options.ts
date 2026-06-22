@@ -29,7 +29,7 @@ export const authOptions: AuthOptions = {
           async authorize(credentials) {
             if (!credentials?.username || !credentials?.password) return null;
 
-            const user = await prisma.user.findUnique({
+            const user = await prisma!.user.findUnique({
               where: { username: credentials.username },
             });
 
