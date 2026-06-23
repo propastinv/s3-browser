@@ -9,11 +9,6 @@ if (!globalForS3.s3Clients) {
     globalForS3.s3Clients = new Map();
 }
 
-const requestHandler = new NodeHttpHandler({
-    httpsAgent: new https.Agent({ maxSockets: 300 }),
-    socketAcquisitionWarningTimeout: 15_000,
-});
-
 export function getS3Client(bucket: BucketConfig): S3Client {
     const cached = globalForS3.s3Clients.get(bucket.id);
     if (cached) return cached;
@@ -26,7 +21,16 @@ export function getS3Client(bucket: BucketConfig): S3Client {
             accessKeyId: bucket.accessKeyId,
             secretAccessKey: bucket.secretAccessKey,
         },
-        requestHandler,
+        requestHandler: new NodeHttpHandler({
+            connectionTimeout: 10_000,
+            requestTimeout: 60_000,
+            httpsAgent: new https.Agent({
+                keepAlive: true,
+                keepAliveMsecs: 1_000,
+                maxSockets: 50,
+                timeout: 30_000,
+            }),
+        }),
     });
 
     globalForS3.s3Clients.set(bucket.id, client);
