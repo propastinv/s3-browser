@@ -39,10 +39,13 @@ export async function GET(req: NextRequest, context: { params: Promise<{ bucketI
 
         const ifNoneMatch = req.headers.get("if-none-match");
         if (ifNoneMatch && ifNoneMatch === ETag) {
+            (Body as Readable).destroy();
             return new Response(null, { status: 304 });
         }
 
         const s3Stream = Body as Readable;
+
+        req.signal.addEventListener("abort", () => s3Stream.destroy());
 
         const transformer = sharp()
             .resize(400, 400, {
@@ -50,6 +53,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ bucketI
                 withoutEnlargement: true
             })
             .jpeg({ quality: 80, progressive: true });
+
+        s3Stream.on("error", () => s3Stream.destroy());
 
         const processedStream = s3Stream.pipe(transformer);
 

@@ -3,6 +3,7 @@ import { GetObjectCommand } from "@aws-sdk/client-s3"
 import { getS3Client } from '@/lib/s3-client';
 import { getBucketById } from "@/lib/buckets";
 import { getToken } from 'next-auth/jwt';
+import { Readable } from "stream";
 
 export async function GET(req: NextRequest, context: { params: Promise<{ bucketId: string }> }) {
     const { searchParams } = new URL(req.url)
@@ -38,12 +39,14 @@ export async function GET(req: NextRequest, context: { params: Promise<{ bucketI
             })
         )
 
-        const stream = result.Body as any
+        const stream = result.Body as Readable
+
+        req.signal.addEventListener("abort", () => stream.destroy());
 
         const filename = key.split("/").pop() || "file"
         const encodedFilename = encodeURIComponent(filename)
 
-        return new NextResponse(stream, {
+        return new NextResponse(stream as any, {
             headers: {
                 "Content-Type": result.ContentType || "application/octet-stream",
                 "Content-Disposition": `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`,
