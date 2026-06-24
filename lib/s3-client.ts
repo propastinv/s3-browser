@@ -22,13 +22,11 @@ export function getS3Client(bucket: BucketConfig): S3Client {
             secretAccessKey: bucket.secretAccessKey,
         },
         requestHandler: new NodeHttpHandler({
-            connectionTimeout: 10_000,
-            requestTimeout: 60_000,
+            connectionTimeout: 5_000,
+            requestTimeout: 120_000,
             httpsAgent: new https.Agent({
-                keepAlive: true,
-                keepAliveMsecs: 1_000,
-                maxSockets: 50,
-                timeout: 30_000,
+                keepAlive: false,
+                maxSockets: 100,
             }),
         }),
     });
