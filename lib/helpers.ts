@@ -1,5 +1,15 @@
-export function addTimestampToFilename(filename: string) {
+function splitFilenameAndExt(filename: string): [string, string] {
+    const compoundMatch = filename.match(/^(.+?)(\.tar\.[a-z0-9]+)$/i)
+    if (compoundMatch) {
+        return [compoundMatch[1], compoundMatch[2].toLowerCase()]
+    }
     const dotIndex = filename.lastIndexOf(".")
+    if (dotIndex === -1) return [filename, ""]
+    return [filename.slice(0, dotIndex), filename.slice(dotIndex).toLowerCase()]
+}
+
+export function addTimestampToFilename(filename: string) {
+    const [namePart, extPart] = splitFilenameAndExt(filename)
 
     const now = new Date()
 
@@ -11,28 +21,15 @@ export function addTimestampToFilename(filename: string) {
         String(now.getMinutes()).padStart(2, "0") + "-" +
         String(now.getSeconds()).padStart(2, "0")
 
-    if (dotIndex === -1) {
-        return `${filename}_${stamp}`
+    if (!extPart) {
+        return `${namePart}_${stamp}`
     }
-
-    const namePart = filename.slice(0, dotIndex)
-    const extPart = filename.slice(dotIndex)
 
     return `${namePart}_${stamp}${extPart}`
 }
 
 export function normalizeFilename(filename: string, addTimestamp = false) {
-    const dotIndex = filename.lastIndexOf(".")
-
-    const namePart =
-        dotIndex === -1
-            ? filename
-            : filename.slice(0, dotIndex)
-
-    const extPart =
-        dotIndex === -1
-            ? ""
-            : filename.slice(dotIndex).toLowerCase()
+    const [namePart, extPart] = splitFilenameAndExt(filename)
 
     const cleanName = namePart
         .normalize("NFKD")

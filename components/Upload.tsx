@@ -247,7 +247,7 @@ export function Upload({ refresh, addTimestamp, className, method = "proxy", ext
             </Button>
 
             <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-                <DialogContent showCloseButton={!uploading}>
+                <DialogContent showCloseButton={!uploading} className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Upload Files</DialogTitle>
                     </DialogHeader>
@@ -277,9 +277,9 @@ export function Upload({ refresh, addTimestamp, className, method = "proxy", ext
                                     {files.map((file, i) => (
                                         <li
                                             key={i}
-                                            className="flex items-center justify-between text-sm text-foreground bg-muted/50 rounded-md px-3 py-2"
+                                            className="flex items-center justify-between text-sm text-foreground bg-muted/50 rounded-md px-3 py-2 min-w-0"
                                         >
-                                            <span className="truncate flex-1 mr-2">{file.name}</span>
+                                            <span className="truncate flex-1 mr-2 min-w-0">{file.name}</span>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
