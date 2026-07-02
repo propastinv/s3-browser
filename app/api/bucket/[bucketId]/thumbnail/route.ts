@@ -60,9 +60,26 @@ export async function GET(req: NextRequest, context: { params: Promise<{ bucketI
 
         const webStream = new ReadableStream({
             async start(controller) {
-                processedStream.on("data", (chunk) => controller.enqueue(chunk));
-                processedStream.on("end", () => controller.close());
-                processedStream.on("error", (err) => controller.error(err));
+                let settled = false;
+
+                processedStream.on("data", (chunk) => {
+                    if (settled) return;
+                    try {
+                        controller.enqueue(chunk);
+                    } catch {
+                        settled = true;
+                    }
+                });
+                processedStream.on("end", () => {
+                    if (settled) return;
+                    settled = true;
+                    controller.close();
+                });
+                processedStream.on("error", (err) => {
+                    if (settled) return;
+                    settled = true;
+                    controller.error(err);
+                });
             },
         });
 
