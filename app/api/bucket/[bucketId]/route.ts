@@ -7,6 +7,7 @@ import {
     DeleteObjectsCommand
 } from '@aws-sdk/client-s3';
 import { getS3Client } from '@/lib/s3-client';
+import * as Sentry from '@sentry/nextjs';
 
 export async function GET(
     req: NextRequest,
@@ -71,6 +72,7 @@ export async function GET(
         });
     } catch (err) {
         console.error(err);
+        Sentry.captureException(err, { tags: { bucket: bucket.id } });
         return NextResponse.json({ error: 'Failed to list objects' }, { status: 500 });
     }
 }
@@ -177,6 +179,7 @@ export async function DELETE(
         return NextResponse.json({ success: true });
     } catch (err: any) {
         console.error(err);
+        Sentry.captureException(err, { tags: { bucket: bucket.id } });
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

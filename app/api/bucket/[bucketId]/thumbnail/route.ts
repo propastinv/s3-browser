@@ -3,6 +3,7 @@ import { getBucketById } from "@/lib/buckets";
 import { getToken } from 'next-auth/jwt';
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getS3Client } from '@/lib/s3-client';
+import * as Sentry from '@sentry/nextjs';
 import sharp from "sharp";
 import { Readable } from "stream";
 
@@ -93,6 +94,9 @@ export async function GET(req: NextRequest, context: { params: Promise<{ bucketI
 
     } catch (err: any) {
         console.error("Thumbnail Error:", err);
+        if (err.name !== "NoSuchKey") {
+            Sentry.captureException(err, { tags: { bucket: bucket.id } });
+        }
         return NextResponse.json(
             { error: err.name === "NoSuchKey" ? "File not found" : "Failed to generate thumbnail" },
             { status: err.name === "NoSuchKey" ? 404 : 500 }

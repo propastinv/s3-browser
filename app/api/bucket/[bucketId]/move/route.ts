@@ -8,6 +8,7 @@ import {
     DeleteObjectsCommand
 } from '@aws-sdk/client-s3';
 import { getS3Client } from '@/lib/s3-client';
+import * as Sentry from '@sentry/nextjs';
 import { createMoveJob, updateMoveJob } from '../move-jobs';
 import crypto from 'crypto';
 
@@ -204,6 +205,7 @@ export async function POST(
 
         } catch (err: any) {
             console.error('Background move failed:', err);
+            Sentry.captureException(err, { tags: { bucket: bucket.id } });
             updateMoveJob(jobId, { status: 'error', error: err.message || 'Unknown error' });
         }
     };

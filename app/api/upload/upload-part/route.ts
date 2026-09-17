@@ -1,5 +1,6 @@
 import { UploadPartCommand } from '@aws-sdk/client-s3';
 import { getS3Client } from '@/lib/s3-client';
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { getBucketById } from '@/lib/buckets';
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
         });
     } catch (error: any) {
         console.error('Upload part error:', error);
+        Sentry.captureException(error, { tags: { bucket: bucket?.id } });
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
