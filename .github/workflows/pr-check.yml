@@ -1,0 +1,23 @@
+name: PR check
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "**"
+      - "!.github/**"
+      - "!README.md"
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Build Docker image
+      working-directory: ./
+      run: docker build -t s3-shadcn:pr-check .
