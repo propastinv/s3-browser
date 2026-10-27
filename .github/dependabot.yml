@@ -24,3 +24,6 @@ updates:
           - "eslint*"
           - "prettier*"
           - "stylelint*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
