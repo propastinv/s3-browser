@@ -212,11 +212,13 @@ export function Move({
                 </Button>
             ) : (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${className || ''}`} onClick={openDialog}>
-                            <ArrowRightLeft className="size-4" />
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${className || ''}`} onClick={openDialog}>
+                                <ArrowRightLeft className="size-4" />
+                            </Button>
+                        }
+                    />
                     <TooltipContent>Move</TooltipContent>
                 </Tooltip>
             ))}
@@ -237,9 +239,7 @@ export function Move({
                                 {segments.length === 0 ? (
                                     <BreadcrumbPage>Root</BreadcrumbPage>
                                 ) : (
-                                    <BreadcrumbLink asChild>
-                                        <button onClick={() => navigateTo('')}>Root</button>
-                                    </BreadcrumbLink>
+                                    <BreadcrumbLink render={<button onClick={() => navigateTo('')}>Root</button>} />
                                 )}
                             </BreadcrumbItem>
                             {segments.map((seg, i) => (
@@ -249,9 +249,7 @@ export function Move({
                                         {i === segments.length - 1 ? (
                                             <BreadcrumbPage>{seg.label}</BreadcrumbPage>
                                         ) : (
-                                            <BreadcrumbLink asChild>
-                                                <button onClick={() => navigateTo(seg.path)}>{seg.label}</button>
-                                            </BreadcrumbLink>
+                                            <BreadcrumbLink render={<button onClick={() => navigateTo(seg.path)}>{seg.label}</button>} />
                                         )}
                                     </BreadcrumbItem>
                                 </>
