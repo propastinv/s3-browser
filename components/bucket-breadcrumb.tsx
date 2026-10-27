@@ -34,11 +34,7 @@ export function BucketBreadcrumb({ bucket, path }: BucketBreadcrumbProps) {
                                         {segment}
                                     </BreadcrumbPage>
                                 ) : (
-                                    <BreadcrumbLink asChild>
-                                        <Link href={href}>
-                                            {segment}
-                                        </Link>
-                                    </BreadcrumbLink>
+                                    <BreadcrumbLink render={<Link href={href}>{segment}</Link>} />
                                 )}
                             </BreadcrumbItem>
                         </div>
