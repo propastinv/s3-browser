@@ -18,7 +18,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
-    "@sentry/nextjs": "^10.59.0",
+    "@sentry/nextjs": "^11.9.0",
     "@tabler/icons-react": "^3.41.1",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.14",
