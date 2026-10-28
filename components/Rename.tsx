@@ -181,16 +181,18 @@ export function Rename({
                 </Button>
             ) : (
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-8 w-8 p-0 ${className || ''}`}
-                            onClick={() => { setBaseName(originalBase); setIsOpen(true); }}
-                        >
-                            <Pencil className="size-4" />
-                        </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`h-8 w-8 p-0 ${className || ''}`}
+                                onClick={() => { setBaseName(originalBase); setIsOpen(true); }}
+                            >
+                                <Pencil className="size-4" />
+                            </Button>
+                        }
+                    />
                     <TooltipContent>Rename</TooltipContent>
                 </Tooltip>
             ))}

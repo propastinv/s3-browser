@@ -58,14 +58,16 @@ export function NavMain({
                       <SidebarMenuButton
                         tooltip={item.title}
                         className={`flex-1 ${isActive ? "bg-sidebar-accent" : ""}`}
-                        asChild={!!item.url}
+                        render={
+                          item.url ? (
+                            <Link href={item.url} className="flex items-center gap-2">
+                              {item.icon && <item.icon width={16} height={16} />}
+                              <span>{item.title}</span>
+                            </Link>
+                          ) : undefined
+                        }
                       >
-                        {item.url ? (
-                          <Link href={item.url} className="flex items-center gap-2">
-                            {item.icon && <item.icon width={16} height={16} />}
-                            <span>{item.title}</span>
-                          </Link>
-                        ) : (
+                        {!item.url && (
                           <div className="flex items-center gap-2">
                             {item.icon && <item.icon width={16} height={16} />}
                             <span>{item.title}</span>
@@ -73,17 +75,19 @@ export function NavMain({
                         )}
                       </SidebarMenuButton>
 
-                      <CollapsibleTrigger asChild>
-                        <button
-                          type="button"
-                          className="ml-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-sidebar-accent transition"
-                        >
-                          <IconChevronRight
-                            className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-                            size={16}
-                          />
-                        </button>
-                      </CollapsibleTrigger>
+                      <CollapsibleTrigger
+                        render={
+                          <button
+                            type="button"
+                            className="ml-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-sidebar-accent transition"
+                          >
+                            <IconChevronRight
+                              className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                              size={16}
+                            />
+                          </button>
+                        }
+                      />
                     </div>
 
                     <CollapsibleContent>
@@ -92,17 +96,19 @@ export function NavMain({
                           const isSubActive = subItem.url === pathname
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild>
-                                <Link
-                                  href={subItem.url}
-                                  className={`${isSubActive
-                                    ? "text-primary font-medium bg-sidebar-accent"
-                                    : ""
-                                    }`}
-                                >
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
+                              <SidebarMenuSubButton
+                                render={
+                                  <Link
+                                    href={subItem.url}
+                                    className={`${isSubActive
+                                      ? "text-primary font-medium bg-sidebar-accent"
+                                      : ""
+                                      }`}
+                                  >
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                }
+                              />
                             </SidebarMenuSubItem>
                           )
                         })}
@@ -111,19 +117,19 @@ export function NavMain({
                   </Collapsible>
                 ) : item.url ? (
                   <SidebarMenuButton
-                    asChild
                     tooltip={item.title}
                     className={
                       isActive
                         ? "bg-sidebar-accent"
                         : ""
                     }
-                  >
-                    <Link href={item.url} className="flex items-center gap-2">
-                      {item.icon && <item.icon />}
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                    render={
+                      <Link href={item.url} className="flex items-center gap-2">
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                      </Link>
+                    }
+                  />
                 ) : (
                   <SidebarMenuButton
                     tooltip={item.title}

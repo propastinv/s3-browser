@@ -192,9 +192,7 @@ export function BulkMove({
                                 {segments.length === 0 ? (
                                     <BreadcrumbPage>Root</BreadcrumbPage>
                                 ) : (
-                                    <BreadcrumbLink asChild>
-                                        <button onClick={() => navigateTo('')}>Root</button>
-                                    </BreadcrumbLink>
+                                    <BreadcrumbLink render={<button onClick={() => navigateTo('')}>Root</button>} />
                                 )}
                             </BreadcrumbItem>
                             {segments.map((seg, i) => (
@@ -204,9 +202,7 @@ export function BulkMove({
                                         {i === segments.length - 1 ? (
                                             <BreadcrumbPage>{seg.label}</BreadcrumbPage>
                                         ) : (
-                                            <BreadcrumbLink asChild>
-                                                <button onClick={() => navigateTo(seg.path)}>{seg.label}</button>
-                                            </BreadcrumbLink>
+                                            <BreadcrumbLink render={<button onClick={() => navigateTo(seg.path)}>{seg.label}</button>} />
                                         )}
                                     </BreadcrumbItem>
                                 </Fragment>

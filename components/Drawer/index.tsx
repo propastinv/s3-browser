@@ -124,7 +124,7 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
             onOpenChange={(open) => {
                 if (!open) onClose()
             }}
-            direction="right"
+            swipeDirection="right"
         >
             <DrawerContent className="h-full w-[24rem] ml-auto">
                 <DrawerHeader>
@@ -153,17 +153,19 @@ export function FileDrawer({ isOpen, onClose, file, refresh, publicUrlPrefix }: 
 
                             <TooltipProvider>
                                 <Tooltip open={copied ? true : undefined}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={onCopyPath}
-                                            title="Copy path"
-                                            className="h-7 w-7 p-0 shrink-0"
-                                        >
-                                            <ClipboardCopy className="h-4 w-4" />
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={onCopyPath}
+                                                title="Copy path"
+                                                className="h-7 w-7 p-0 shrink-0"
+                                            >
+                                                <ClipboardCopy className="h-4 w-4" />
+                                            </Button>
+                                        }
+                                    />
 
                                     <TooltipContent side="left">
                                         {copied ? "Copied!" : publicUrlPrefix ? "Copy URL" : "Copy path"}

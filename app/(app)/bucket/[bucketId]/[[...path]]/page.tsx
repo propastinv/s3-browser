@@ -247,19 +247,21 @@ export default function BucketPage() {
                             </Select>
                             <TooltipProvider>
                                 <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="px-2 shrink-0"
-                                            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                                        >
-                                            {sortOrder === "asc" ? (
-                                                <SortAsc className="size-4" />
-                                            ) : (
-                                                <SortDesc className="size-4" />
-                                            )}
-                                        </Button>
-                                    </TooltipTrigger>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                variant="outline"
+                                                className="px-2 shrink-0"
+                                                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                                            >
+                                                {sortOrder === "asc" ? (
+                                                    <SortAsc className="size-4" />
+                                                ) : (
+                                                    <SortDesc className="size-4" />
+                                                )}
+                                            </Button>
+                                        }
+                                    />
                                     <TooltipContent>
                                         {sortOrder === "asc" ? "Sort Ascending" : "Sort Descending"}
                                     </TooltipContent>
@@ -377,20 +379,22 @@ export default function BucketPage() {
                                                         <Folder className="size-5 shrink-0 text-amber-300" fill="currentColor" />
                                                         <span className="truncate">{name}</span>
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-6 w-6 p-0 shrink-0 ml-auto opacity-0 group-hover:opacity-100"
-                                                                    onClick={(e) => { e.stopPropagation(); copyWithFeedback(item) }}
-                                                                >
-                                                                    <span key={copiedKey === item.key ? 'check' : 'copy'} className="animate-in zoom-in-75 fade-in duration-150">
-                                                                        {copiedKey === item.key
-                                                                            ? <Check className="size-3.5 text-green-500" />
-                                                                            : <Copy className="size-3.5" />}
-                                                                    </span>
-                                                                </Button>
-                                                            </TooltipTrigger>
+                                                            <TooltipTrigger
+                                                                render={
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-6 w-6 p-0 shrink-0 ml-auto opacity-0 group-hover:opacity-100"
+                                                                        onClick={(e) => { e.stopPropagation(); copyWithFeedback(item) }}
+                                                                    >
+                                                                        <span key={copiedKey === item.key ? 'check' : 'copy'} className="animate-in zoom-in-75 fade-in duration-150">
+                                                                            {copiedKey === item.key
+                                                                                ? <Check className="size-3.5 text-green-500" />
+                                                                                : <Copy className="size-3.5" />}
+                                                                        </span>
+                                                                    </Button>
+                                                                }
+                                                            />
                                                             <TooltipContent>Copy {publicUrlPrefix ? "URL" : "path"}</TooltipContent>
                                                         </Tooltip>
                                                     </div>
@@ -440,20 +444,22 @@ export default function BucketPage() {
                                                         )}
                                                         <span className="truncate">{name}</span>
                                                         <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-6 w-6 p-0 shrink-0 ml-auto opacity-0 group-hover:opacity-100"
-                                                                    onClick={(e) => { e.stopPropagation(); copyWithFeedback(item) }}
-                                                                >
-                                                                    <span key={copiedKey === item.key ? 'check' : 'copy'} className="animate-in zoom-in-75 fade-in duration-150">
-                                                                        {copiedKey === item.key
-                                                                            ? <Check className="size-3.5 text-green-500" />
-                                                                            : <Copy className="size-3.5" />}
-                                                                    </span>
-                                                                </Button>
-                                                            </TooltipTrigger>
+                                                            <TooltipTrigger
+                                                                render={
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-6 w-6 p-0 shrink-0 ml-auto opacity-0 group-hover:opacity-100"
+                                                                        onClick={(e) => { e.stopPropagation(); copyWithFeedback(item) }}
+                                                                    >
+                                                                        <span key={copiedKey === item.key ? 'check' : 'copy'} className="animate-in zoom-in-75 fade-in duration-150">
+                                                                            {copiedKey === item.key
+                                                                                ? <Check className="size-3.5 text-green-500" />
+                                                                                : <Copy className="size-3.5" />}
+                                                                        </span>
+                                                                    </Button>
+                                                                }
+                                                            />
                                                             <TooltipContent>Copy {publicUrlPrefix ? "URL" : "path"}</TooltipContent>
                                                         </Tooltip>
                                                     </div>
