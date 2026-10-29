@@ -10,18 +10,19 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible"
+
 
 export function NavMain({
   items,
@@ -54,41 +55,33 @@ export function NavMain({
                     defaultOpen={isActive || isSubActive}
                     className="group/collapsible"
                   >
-                    <div className="flex items-center">
-                      <SidebarMenuButton
-                        tooltip={item.title}
-                        className={`flex-1 ${isActive ? "bg-sidebar-accent" : ""}`}
-                        render={
-                          item.url ? (
-                            <Link href={item.url} className="flex items-center gap-2">
-                              {item.icon && <item.icon width={16} height={16} />}
-                              <span>{item.title}</span>
-                            </Link>
-                          ) : undefined
-                        }
-                      >
-                        {!item.url && (
-                          <div className="flex items-center gap-2">
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      className={isActive ? "bg-sidebar-accent" : ""}
+                      render={
+                        item.url ? (
+                          <Link href={item.url} className="flex items-center gap-2">
                             {item.icon && <item.icon width={16} height={16} />}
                             <span>{item.title}</span>
-                          </div>
-                        )}
-                      </SidebarMenuButton>
+                          </Link>
+                        ) : undefined
+                      }
+                    >
+                      {!item.url && (
+                        <div className="flex items-center gap-2">
+                          {item.icon && <item.icon width={16} height={16} />}
+                          <span>{item.title}</span>
+                        </div>
+                      )}
+                    </SidebarMenuButton>
 
-                      <CollapsibleTrigger
-                        render={
-                          <button
-                            type="button"
-                            className="ml-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-sidebar-accent transition"
-                          >
-                            <IconChevronRight
-                              className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-                              size={16}
-                            />
-                          </button>
-                        }
-                      />
-                    </div>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuAction className="group-data-open/collapsible:rotate-90">
+                          <IconChevronRight />
+                        </SidebarMenuAction>
+                      }
+                    />
 
                     <CollapsibleContent>
                       <SidebarMenuSub>
